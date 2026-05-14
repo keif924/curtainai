@@ -12,49 +12,50 @@
 <link rel="manifest" id="manifest-link">
 <style>
 :root{
-  --bg:#FFFFFF;--sf:#FFFFFF;--sf2:#FDF8FF;--bd:#EDE6F5;--bd2:#D9CCF0;
-  --tx:#3D2D5C;--tx2:#7B6A99;--tx3:#B3A3CC;
-  --ac:#B39DDB;--ac2:#F48FB1;--ac3:#A5D6A7;--dg:#EF9A9A;
-  --pk:#FCE4EC;--lv:#EDE7F6;--mn:#E8F5E9;
+  --bg:#FFFFFF;--sf:#FFFFFF;--sf2:#FFF8F3;--bd:#F0DDD0;--bd2:#E8C9B5;
+  --tx:#2D1F14;--tx2:#8B6A55;--tx3:#C4A882;
+  --ac:#FFCBA4;--ac-d:#F4A96D;--ac-l:#FFF5EE;
+  --ac2:#A8C5B5;--ac2-d:#7DAF98;
+  --ac3:#E8A598;--dg:#E07B6A;
   --r:16px;--rs:10px;
-  --sh:0 4px 20px rgba(100,60,160,.08);--shl:0 8px 36px rgba(100,60,160,.14);
+  --sh:0 4px 20px rgba(180,100,50,.08);--shl:0 8px 36px rgba(180,100,50,.14);
   font-family:'PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100vh;background:var(--bg);color:var(--tx)}
 /* ---- NAV ---- */
 nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.96);backdrop-filter:blur(16px);
-  border-bottom:1px solid var(--bd);padding:0 24px;display:flex;align-items:center;
-  justify-content:space-between;height:62px;box-shadow:0 2px 12px rgba(100,60,160,.06)}
+  border-bottom:1.5px solid var(--bd);padding:0 24px;display:flex;align-items:center;
+  justify-content:space-between;height:62px;box-shadow:0 2px 12px rgba(180,100,50,.06)}
 .logo{font-size:20px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:9px;text-decoration:none;color:var(--tx);letter-spacing:-.3px}
-.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#B39DDB,#F48FB1);
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#FFCBA4,#F4A96D);
   border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;
-  box-shadow:0 3px 10px rgba(179,157,219,.4)}
+  box-shadow:0 3px 10px rgba(244,169,109,.4)}
 .nav-r{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
 .nb{background:none;border:none;padding:7px 13px;border-radius:20px;cursor:pointer;
   font-size:13px;color:var(--tx2);transition:all .2s;font-family:inherit;white-space:nowrap;font-weight:500}
-.nb:hover{background:var(--lv);color:var(--tx)}
-.nb.pr{background:linear-gradient(135deg,#B39DDB,#CE93D8);color:#fff;font-weight:700;
-  box-shadow:0 3px 12px rgba(179,157,219,.4)}.nb.pr:hover{opacity:.9;transform:translateY(-1px)}
-.pts-b{background:linear-gradient(135deg,#FCE4EC,#F8BBD9);border:1.5px solid #F48FB1;border-radius:20px;padding:5px 14px;
-  font-size:13px;color:#C2185B;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(244,143,177,.25)}
+.nb:hover{background:var(--ac-l);color:var(--tx)}
+.nb.pr{background:linear-gradient(135deg,#FFCBA4,#F4A96D);color:#fff;font-weight:700;
+  box-shadow:0 3px 12px rgba(244,169,109,.4)}.nb.pr:hover{opacity:.9;transform:translateY(-1px)}
+.pts-b{background:linear-gradient(135deg,#FFF5EE,#FFE8D5);border:1.5px solid #FFCBA4;border-radius:20px;padding:5px 14px;
+  font-size:13px;color:#C05A00;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(255,203,164,.35)}
 /* ---- PAGES ---- */
 .page{display:none;min-height:calc(100vh - 60px)}.page.active{display:block}
 /* ---- BUTTONS ---- */
 .btn{padding:12px 26px;border-radius:50px;border:none;cursor:pointer;font-size:14px;
   font-weight:700;transition:all .22s;font-family:inherit;display:inline-flex;align-items:center;gap:7px;letter-spacing:.1px}
-.bp{background:linear-gradient(135deg,#B39DDB,#CE93D8);color:#fff;box-shadow:0 4px 14px rgba(179,157,219,.4)}
-.bp:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(179,157,219,.5);opacity:.95}
-.bs{background:#fff;color:var(--tx);border:1.5px solid var(--bd)}.bs:hover{border-color:var(--ac);transform:translateY(-1px);background:var(--lv)}
-.ba2{background:linear-gradient(135deg,#F48FB1,#F06292);color:#fff;box-shadow:0 4px 14px rgba(244,143,177,.4)}
-.ba2:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(244,143,177,.5)}
+.bp{background:linear-gradient(135deg,#FFCBA4,#F4A96D);color:#fff;box-shadow:0 4px 14px rgba(244,169,109,.35)}
+.bp:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(244,169,109,.5);opacity:.95}
+.bs{background:#fff;color:var(--tx);border:1.5px solid var(--bd)}.bs:hover{border-color:var(--ac);transform:translateY(-1px);background:var(--ac-l)}
+.ba2{background:linear-gradient(135deg,#A8C5B5,#7DAF98);color:#fff;box-shadow:0 4px 14px rgba(125,175,152,.35)}
+.ba2:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(125,175,152,.5)}
 .bsm{padding:8px 18px;font-size:13px;border-radius:50px}
 .bfull{width:100%;justify-content:center}
 /* ---- ALERTS ---- */
 .al{padding:12px 16px;border-radius:14px;font-size:13px;margin-bottom:14px;line-height:1.6;font-weight:500}
-.al-ok{background:#F1F8E9;color:#33691E;border:1.5px solid #C5E1A5}
-.al-err{background:#FCE4EC;color:#880E4F;border:1.5px solid #F48FB1}
-.al-inf{background:#EDE7F6;color:#4527A0;border:1.5px solid #CE93D8}
+.al-ok{background:#F1F8E9;color:#33691E;border:1.5px solid #A5D6A7}
+.al-err{background:#FFF0E5;color:#C05A00;border:1.5px solid #FFCBA4}
+.al-inf{background:#FFF5EE;color:#8B4513;border:1.5px solid #F0DDD0}
 .al-warn{background:#FFF8E1;color:#E65100;border:1.5px solid #FFE082}
 /* ---- FORMS ---- */
 .fg{margin-bottom:16px}
@@ -63,17 +64,17 @@ input[type=text],input[type=email],input[type=password],textarea,select{
   width:100%;padding:11px 14px;border:1.5px solid var(--bd);border-radius:12px;
   font-size:14px;background:#FAFAFA;color:var(--tx);font-family:inherit;
   transition:all .2s;outline:none}
-input:focus,textarea:focus,select:focus{border-color:var(--ac);background:#fff;box-shadow:0 0 0 3px rgba(179,157,219,.15)}
+input:focus,textarea:focus,select:focus{border-color:var(--ac);background:#fff;box-shadow:0 0 0 3px rgba(255,203,164,.25)}
 textarea{resize:vertical;min-height:76px}
 /* ---- HOME ---- */
 .hero{padding:80px 24px 60px;text-align:center;max-width:780px;margin:0 auto;position:relative}
 .hero::before{content:'🪟';position:absolute;top:30px;left:5%;font-size:32px;opacity:.15;transform:rotate(-15deg)}
 .hero::after{content:'✨';position:absolute;top:60px;right:8%;font-size:24px;opacity:.2}
-.hero-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#EDE7F6,#FCE4EC);
-  border:1.5px solid #D1C4E9;border-radius:50px;padding:7px 18px;font-size:12px;color:var(--tx);
-  margin-bottom:24px;letter-spacing:.3px;font-weight:600;box-shadow:0 2px 10px rgba(179,157,219,.2)}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#FFF5EE,#FFE8D5);
+  border:1.5px solid #FFCBA4;border-radius:50px;padding:7px 18px;font-size:12px;color:var(--tx);
+  margin-bottom:24px;letter-spacing:.3px;font-weight:600;box-shadow:0 2px 10px rgba(255,203,164,.3)}
 .hero h1{font-size:50px;font-weight:900;line-height:1.12;margin-bottom:18px;letter-spacing:-2px;color:var(--tx)}
-.hero h1 span{background:linear-gradient(135deg,#B39DDB,#F48FB1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero h1 span{background:linear-gradient(135deg,#F4A96D,#FFCBA4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero p{font-size:17px;color:var(--tx2);line-height:1.75;margin-bottom:34px;max-width:480px;margin-left:auto;margin-right:auto}
 .hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;
@@ -84,7 +85,7 @@ textarea{resize:vertical;min-height:76px}
 .fc-icon{font-size:30px;margin-bottom:14px;display:block}
 .fc h3{font-size:15px;font-weight:700;margin-bottom:7px;color:var(--tx)}
 .fc p{font-size:13px;color:var(--tx2);line-height:1.65}
-.steps-sec{background:linear-gradient(160deg,#F3E5F5 0%,#FCE4EC 50%,#E8EAF6 100%);
+.steps-sec{background:linear-gradient(160deg,#FFF5EE 0%,#FFE8D5 50%,#FFF0E5 100%);
   border-top:1.5px solid var(--bd);border-bottom:1.5px solid var(--bd);padding:60px 24px}
 .steps-in{max-width:760px;margin:0 auto}
 .sec-t{text-align:center;font-size:28px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;color:var(--tx)}
@@ -94,9 +95,9 @@ textarea{resize:vertical;min-height:76px}
   border:1.5px solid rgba(255,255,255,.9);backdrop-filter:blur(8px);
   box-shadow:0 4px 16px rgba(100,60,160,.08);transition:all .25s}
 .step:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(100,60,160,.14)}
-.step-n{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#B39DDB,#F48FB1);color:#fff;
+.step-n{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#FFCBA4,#F4A96D);color:#fff;
   font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;
-  box-shadow:0 4px 12px rgba(179,157,219,.4)}
+  box-shadow:0 4px 12px rgba(244,169,109,.4)}
 .step h4{font-size:14px;font-weight:700;margin-bottom:5px;color:var(--tx)}
 .step p{font-size:12px;color:var(--tx2)}
 /* ---- AUTH ---- */
@@ -106,7 +107,7 @@ textarea{resize:vertical;min-height:76px}
 .auth-tabs{display:flex;border-bottom:1.5px solid var(--bd);margin-bottom:26px}
 .auth-tab{flex:1;text-align:center;padding:11px;cursor:pointer;font-size:14px;color:var(--tx2);
   border-bottom:2.5px solid transparent;margin-bottom:-1px;transition:all .2s;font-weight:500}
-.auth-tab.active{color:var(--ac);border-bottom-color:var(--ac);font-weight:700}
+.auth-tab.active{color:#C05A00;border-bottom-color:var(--ac);font-weight:700}
 /* ---- DASHBOARD ---- */
 .dash{max-width:860px;margin:0 auto;padding:36px 24px}
 .dash-hdr{margin-bottom:28px}
@@ -118,8 +119,8 @@ textarea{resize:vertical;min-height:76px}
 .sc:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(100,60,160,.1)}
 .sc-l{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600}
 .sc-v{font-size:28px;font-weight:800}
-.sc-v.a1{background:linear-gradient(135deg,#B39DDB,#CE93D8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.sc-v.a2{background:linear-gradient(135deg,#F48FB1,#F06292);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sc-v.a1{background:linear-gradient(135deg,#F4A96D,#FFCBA4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sc-v.a2{background:linear-gradient(135deg,#A8C5B5,#7DAF98);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .qa{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}
 .empty-s{text-align:center;padding:36px;color:var(--tx3)}
 .empty-s .ei{font-size:36px;margin-bottom:10px}
@@ -128,9 +129,9 @@ textarea{resize:vertical;min-height:76px}
 .create-wrap h2{font-size:24px;font-weight:700;margin-bottom:5px}
 .create-wrap .sub{color:var(--tx2);margin-bottom:28px;font-size:14px}
 .cf{background:#fff;border:1.5px solid var(--bd);border-radius:22px;padding:30px;box-shadow:0 4px 20px rgba(100,60,160,.06)}
-.upload-zone{border:2.5px dashed #D1C4E9;border-radius:20px;padding:40px;text-align:center;
-  cursor:pointer;transition:all .25s;background:linear-gradient(135deg,#FAF5FF,#FFF0F8)}
-.upload-zone:hover,.upload-zone.drag{border-color:var(--ac);background:linear-gradient(135deg,#F3E5F5,#FCE4EC);transform:scale(1.01)}
+.upload-zone{border:2.5px dashed #F0DDD0;border-radius:20px;padding:40px;text-align:center;
+  cursor:pointer;transition:all .25s;background:linear-gradient(135deg,#FFF8F3,#FFF5EE)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--ac);background:linear-gradient(135deg,#FFE8D5,#FFF0E5);transform:scale(1.01)}
 .upload-zone.has-img{border-style:solid;border-color:var(--ac);padding:12px;background:#fff}
 .upload-zone img{max-width:100%;max-height:240px;border-radius:14px;object-fit:contain;display:block;margin:0 auto}
 .opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:22px 0}
@@ -138,7 +139,7 @@ textarea{resize:vertical;min-height:76px}
 .csw{width:100%;aspect-ratio:1;border-radius:12px;cursor:pointer;border:2.5px solid transparent;
   transition:all .22s;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .csw:hover{transform:scale(1.12);box-shadow:0 4px 14px rgba(0,0,0,.15)}
-.csw.sel{border-color:#7B1FA2;box-shadow:0 0 0 3px #fff inset,0 4px 14px rgba(123,31,162,.3)}
+.csw.sel{border-color:#C05A00;box-shadow:0 0 0 3px #fff inset,0 4px 14px rgba(244,169,109,.4)}
 .csw .tip{display:none;position:absolute;bottom:110%;left:50%;transform:translateX(-50%);
   background:var(--tx);color:#fff;font-size:10px;padding:3px 7px;border-radius:4px;
   white-space:nowrap;pointer-events:none;z-index:20}
@@ -146,7 +147,7 @@ textarea{resize:vertical;min-height:76px}
 .sd{border:none;border-top:1px solid var(--bd);margin:22px 0}
 .gen-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
   gap:10px;margin-top:24px;padding-top:22px;border-top:2px dashed var(--bd)}
-.pi{font-size:13px;color:var(--tx2);font-weight:500}.pi strong{color:#C2185B;font-weight:700}
+.pi{font-size:13px;color:var(--tx2);font-weight:500}.pi strong{color:#C05A00;font-weight:700}
 /* PROGRESS */
 .prog-wrap{text-align:center;padding:36px}
 .prog-ring{width:76px;height:76px;margin:0 auto 18px}
@@ -156,7 +157,7 @@ textarea{resize:vertical;min-height:76px}
   transform-origin:50% 50%;transform:rotate(-90deg)}
 .prog-txt{font-size:14px;color:var(--tx2);margin-bottom:5px}
 .prog-sub{font-size:12px;color:var(--tx3)}
-.slog{background:#FAF5FF;border:1.5px solid var(--bd);border-radius:12px;
+.slog{background:#FFF8F3;border:1.5px solid var(--bd);border-radius:12px;
   padding:11px 13px;font-size:11px;color:var(--tx2);margin-top:13px;
   max-height:110px;overflow-y:auto;font-family:monospace;line-height:1.8}
 .slog .ll{display:block}.slog .lk{color:var(--ac3)}.slog .le{color:var(--dg)}
@@ -170,11 +171,11 @@ textarea{resize:vertical;min-height:76px}
 .plan-card{background:#fff;border:2px solid var(--bd);border-radius:24px;
   padding:28px;cursor:pointer;transition:all .25s;box-shadow:0 4px 16px rgba(100,60,160,.06)}
 .plan-card:hover{border-color:var(--ac);box-shadow:0 8px 28px rgba(100,60,160,.14);transform:translateY(-3px)}
-.plan-card.feat{border-color:#F48FB1;background:linear-gradient(160deg,#fff,#FFF0F8)}
-.plan-badge{display:inline-block;background:linear-gradient(135deg,#F48FB1,#F06292);color:#fff;font-size:11px;
-  padding:4px 12px;border-radius:50px;margin-bottom:14px;font-weight:700;box-shadow:0 3px 10px rgba(244,143,177,.4)}
+.plan-card.feat{border-color:#FFCBA4;background:linear-gradient(160deg,#fff,#FFF5EE)}
+.plan-badge{display:inline-block;background:linear-gradient(135deg,#FFCBA4,#F4A96D);color:#fff;font-size:11px;
+  padding:4px 12px;border-radius:50px;margin-bottom:14px;font-weight:700;box-shadow:0 3px 10px rgba(244,169,109,.4)}
 .plan-price{font-size:32px;font-weight:900;margin-bottom:3px;color:var(--tx)}
-.plan-pts{font-size:14px;font-weight:700;margin-bottom:5px;background:linear-gradient(135deg,#B39DDB,#F48FB1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.plan-pts{font-size:14px;font-weight:700;margin-bottom:5px;background:linear-gradient(135deg,#F4A96D,#FFCBA4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .plan-per{font-size:11px;color:var(--tx3);margin-bottom:14px}
 .plan-card ul{padding-left:16px;font-size:13px;color:var(--tx2);line-height:2.1;margin-bottom:16px}
 .plan-card .btn{width:100%;justify-content:center}
@@ -186,12 +187,12 @@ textarea{resize:vertical;min-height:76px}
   width:100%;box-shadow:0 12px 48px rgba(100,60,160,.2);max-height:90vh;overflow-y:auto;border:2px solid var(--bd)}
 .ep-modal h3{font-size:18px;font-weight:700;margin-bottom:16px}
 .ep-table{width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;border-radius:12px;overflow:hidden}
-.ep-table th{background:#F3E5F5;padding:9px 12px;text-align:left;color:var(--tx);
+.ep-table th{background:#FFF5EE;padding:9px 12px;text-align:left;color:var(--tx);
   font-weight:700;border:1px solid var(--bd);font-size:12px}
 .ep-table td{padding:9px 12px;border:1px solid var(--bd);font-family:monospace;word-break:break-all;background:#fff}
-.ep-table td.hl{color:#7B1FA2;font-weight:700;font-family:inherit}
+.ep-table td.hl{color:#C05A00;font-weight:700;font-family:inherit}
 .ep-form{display:none}
-.confirm-area{background:linear-gradient(135deg,#F3E5F5,#FCE4EC);border:1.5px solid #CE93D8;border-radius:18px;
+.confirm-area{background:linear-gradient(135deg,#FFF5EE,#FFE8D5);border:1.5px solid #FFCBA4;border-radius:18px;
   padding:22px;margin-top:16px;text-align:center}
 .confirm-area .c-icon{font-size:36px;margin-bottom:10px}
 .confirm-area p{font-size:13px;color:var(--tx);margin-bottom:14px;line-height:1.5;font-weight:500}
@@ -202,15 +203,15 @@ textarea{resize:vertical;min-height:76px}
   box-shadow:0 3px 14px rgba(100,60,160,.07);transition:all .25s}
 .hc:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(100,60,160,.13)}
 .hc img{width:100%;height:168px;object-fit:cover;display:block;background:var(--lv)}
-.hc-ph{width:100%;height:168px;background:linear-gradient(135deg,#F3E5F5,#FCE4EC);display:flex;align-items:center;justify-content:center;font-size:30px}
+.hc-ph{width:100%;height:168px;background:linear-gradient(135deg,#FFF5EE,#FFE8D5);display:flex;align-items:center;justify-content:center;font-size:30px}
 .hc-info{padding:12px}
 .hc-info h4{font-size:13px;font-weight:600;margin-bottom:3px}
 .hc-info p{font-size:12px;color:var(--tx2)}
 .hc-acts{display:flex;gap:7px;padding:0 12px 12px}
 .sbadge{display:inline-block;font-size:11px;padding:3px 10px;border-radius:50px;font-weight:700;margin-top:4px}
 .sbadge.success{background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7}
-.sbadge.failed{background:#FDECEA;color:#C62828;border:1px solid #FFCDD2}
-.sbadge.pending{background:#FFF8E1;color:#F57F17;border:1px solid #FFE082}
+.sbadge.failed{background:#FFF0E5;color:#C05A00;border:1px solid #FFCBA4}
+.sbadge.pending{background:#FFF8E1;color:#E65100;border:1px solid #FFE082}
 /* ---- PAY RESULT ---- */
 .pay-result{text-align:center;padding:80px 24px;max-width:460px;margin:0 auto}
 .pay-result .big{font-size:70px;margin-bottom:18px;display:block;animation:bounce .6s ease}
@@ -269,15 +270,70 @@ textarea{resize:vertical;min-height:76px}
 <!-- ===== HOME ===== -->
 <div class="page active" id="page-home">
   <div class="hero">
-    <div class="hero-badge">🪟 AI 智能窗簾設計 · Nano Banana 2 ✨</div>
-    <h1>讓 AI 為您的<br><span>空間設計窗簾</span></h1>
-    <p>上傳空間照片，選擇喜愛的窗簾風格，AI 數十秒生成完美室內效果圖。</p>
+    <div class="hero-badge">🪟 選窗簾不再靠猜測 · AI 效果圖即時預覽 ✨</div>
+    <h1>裝窗簾前，先用<br><span>AI 看見成品</span></h1>
+    <p>不用再拿著布料在家猜測，上傳空間照片，AI 直接幫您把窗簾裝進家裡，<strong style="-webkit-text-fill-color:inherit;color:var(--tx)">白天、下午、晚上</strong>三種光線效果一次呈現。</p>
     <div style="display:flex;justify-content:center;gap:16px;font-size:28px;margin-bottom:16px;opacity:.6">🪟 🌸 ✨ 🎀 🪟</div>
     <div class="hero-btns">
       <button class="btn bp" onclick="authGo('create')">✦ 免費開始設計</button>
       <button class="btn bs" onclick="document.getElementById('steps-sec').scrollIntoView({behavior:'smooth'})">了解更多 ↓</button>
     </div>
   </div>
+  <!-- PAIN POINTS SECTION -->
+  <div style="background:#fff;padding:64px 24px 56px;border-bottom:1.5px solid var(--bd)">
+    <div style="max-width:860px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:48px">
+        <div style="display:inline-block;background:linear-gradient(135deg,#FFE8D5,#FFF5EE);border:1.5px solid #FFCBA4;border-radius:50px;padding:6px 20px;font-size:12px;font-weight:700;color:#C05A00;margin-bottom:16px;letter-spacing:.5px">
+          😩 選窗簾，比你想像中更難
+        </div>
+        <h2 style="font-size:30px;font-weight:900;color:var(--tx);letter-spacing:-.5px;margin-bottom:10px">您是否也有這些困擾？</h2>
+        <p style="font-size:15px;color:var(--tx2);max-width:480px;margin:0 auto;line-height:1.7">選窗簾不是選布料，是選一個每天都要看到的生活決定。</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:48px">
+        <!-- 痛點 1 -->
+        <div style="background:linear-gradient(135deg,#FFF8E1,#FFF3E0);border:1.5px solid #FFE082;border-radius:20px;padding:26px 22px">
+          <div style="font-size:32px;margin-bottom:12px">🧵</div>
+          <h3 style="font-size:15px;font-weight:800;color:var(--tx);margin-bottom:8px">拿著布料在家比對，越比越迷茫</h3>
+          <p style="font-size:13px;color:var(--tx2);line-height:1.7">你拿著一塊布料在窗邊反覆比對，卻始終無法想像掛上去的樣子。明明顏色很好看，但就是不確定裝上去對不對。</p>
+        </div>
+        <!-- 痛點 2 -->
+        <div style="background:linear-gradient(135deg,#E8F5E9,#F1F8E9);border:1.5px solid #A5D6A7;border-radius:20px;padding:26px 22px">
+          <div style="font-size:32px;margin-bottom:12px">🌞</div>
+          <h3 style="font-size:15px;font-weight:800;color:var(--tx);margin-bottom:8px">在店裡很好看，裝回家卻大失望</h3>
+          <p style="font-size:13px;color:var(--tx2);line-height:1.7">燈光不同、空間不同，展示間的效果完全無法還原到你家。花了大錢，卻只換來一個「怎麼感覺不一樣」的遺憾。</p>
+        </div>
+        <!-- 痛點 3 -->
+        <div style="background:linear-gradient(135deg,#EEF6F2,#E8F4EF);border:1.5px solid #A8C5B5;border-radius:20px;padding:26px 22px">
+          <div style="font-size:32px;margin-bottom:12px">🌙</div>
+          <h3 style="font-size:15px;font-weight:800;color:var(--tx);margin-bottom:8px">白天選好了，晚上開燈又是另一回事</h3>
+          <p style="font-size:13px;color:var(--tx2);line-height:1.7">窗簾在白天陽光下是一種感覺，晚上室內燈光又完全不同。你永遠不知道你選的顏色在夜晚看起來是否一樣美。</p>
+        </div>
+        <!-- 痛點 4 -->
+        <div style="background:linear-gradient(135deg,#FFF0E5,#FFE8D5);border:1.5px solid #FFCBA4;border-radius:20px;padding:26px 22px">
+          <div style="font-size:32px;margin-bottom:12px">😰</div>
+          <h3 style="font-size:15px;font-weight:800;color:var(--tx);margin-bottom:8px">下單後一直後悔，卻又不想重買</h3>
+          <p style="font-size:13px;color:var(--tx2);line-height:1.7">窗簾不像衣服可以退換，一旦裁剪製作就無法退貨。每次猶豫都是在賭，下單那一刻是最煎熬的。</p>
+        </div>
+      </div>
+
+      <!-- 解決方案橋接 -->
+      <div style="background:linear-gradient(135deg,#FFF5EE,#FFE8D5);border-radius:24px;padding:36px;text-align:center;border:2px solid #FFCBA4">
+        <div style="font-size:36px;margin-bottom:14px">💡</div>
+        <h3 style="font-size:22px;font-weight:900;color:var(--tx);margin-bottom:10px;letter-spacing:-.3px">
+          所以我們打造了 CurtainAI
+        </h3>
+        <p style="font-size:15px;color:var(--tx2);line-height:1.8;max-width:520px;margin:0 auto 20px">
+          上傳您的空間照片，AI 會直接把窗簾「裝」進您家，同時呈現<strong style="color:var(--tx)">白天、下午、晚上</strong>三種光線效果。<br>
+          選窗簾，從此不再是賭注。
+        </p>
+        <button class="btn bp" onclick="authGo('create')" style="font-size:15px;padding:14px 32px">
+          ✦ 免費體驗一組效果圖
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="feats">
     <div class="fc"><div class="fc-icon">🖼️</div><h3>真實空間融合</h3><p>AI 精準保留原空間格局，僅替換窗簾，呈現最真實的效果。</p></div>
     <div class="fc"><div class="fc-icon">🎨</div><h3>莫蘭迪色系</h3><p>精選 20 種莫蘭迪配色，讓每款窗簾都溫柔精緻。</p></div>
@@ -313,7 +369,7 @@ textarea{resize:vertical;min-height:76px}
         <button class="btn bp bfull" onclick="doLogin()">登入</button>
       </div>
       <div id="form-reg" style="display:none">
-        <div class="al al-inf">🎁 新用戶註冊即贈 <strong>20 點</strong>，可免費生成 2 張！</div>
+        <div class="al al-inf">🎁 新用戶註冊即贈 <strong>30 點</strong>，可免費體驗 1 組（☀️ 白天・🌇 下午・🌙 晚上共 3 張）！</div>
         <div class="fg"><label>顯示名稱</label><input type="text" id="rg-n" placeholder="您的姓名"></div>
         <div class="fg"><label>電子郵件</label><input type="email" id="rg-e" placeholder="your@email.com"></div>
         <div class="fg"><label>密碼（至少 6 字元）</label><input type="password" id="rg-p" placeholder="••••••••"></div>
@@ -333,7 +389,7 @@ textarea{resize:vertical;min-height:76px}
     <div class="stat-grid">
       <div class="sc"><div class="sc-l">目前點數</div><div class="sc-v a1" id="d-pts">0</div></div>
       <div class="sc"><div class="sc-l">已生成圖片</div><div class="sc-v" id="d-cnt">0</div></div>
-      <div class="sc"><div class="sc-l">可生成次數</div><div class="sc-v a2" id="d-rem">0</div></div>
+      <div class="sc"><div class="sc-l">可生成組數</div><div class="sc-v a2" id="d-rem">0</div></div>
     </div>
     <div class="qa">
       <button class="btn bp" onclick="go('create')">✦ 製作窗簾空間</button>
@@ -349,7 +405,7 @@ textarea{resize:vertical;min-height:76px}
 <div class="page" id="page-create">
   <div class="create-wrap">
     <h2>製作窗簾空間</h2>
-    <p class="sub">上傳空間照片，選擇窗簾選項，AI 即時生成效果圖</p>
+    <p class="sub">上傳空間照片，選擇窗簾選項，AI 同時生成白天、下午、晚上 3 張效果圖</p>
 
     <!-- Main Form -->
     <div class="cf" id="create-form">
@@ -398,7 +454,7 @@ textarea{resize:vertical;min-height:76px}
         <textarea id="extra-note" placeholder="例如：希望窗簾有層次感、配合北歐風格..."></textarea>
       </div>
       <div class="gen-bar">
-        <div class="pi">每次消耗 <strong>10 點</strong> · 目前：<strong id="cur-pts">0</strong> 點</div>
+        <div class="pi">☀️🌇🌙 每組生成 3 張，消耗 <strong>30 點</strong> · 目前：<strong id="cur-pts">0</strong> 點</div>
         <button class="btn bp" id="gen-btn" onclick="doGenerate()">✦ 生成效果圖</button>
       </div>
     </div>
@@ -408,7 +464,7 @@ textarea{resize:vertical;min-height:76px}
       <div class="cf" style="margin-top:0">
         <div class="prog-wrap">
           <svg class="prog-ring" viewBox="0 0 76 76">
-            <defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#B39DDB"/><stop offset="100%" style="stop-color:#F48FB1"/></linearGradient></defs>
+            <defs><linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#FFCBA4"/><stop offset="100%" style="stop-color:#F4A96D"/></linearGradient></defs>
             <circle class="pbg" cx="38" cy="38" r="31"/>
             <circle class="pfg" id="prog-circle" cx="38" cy="38" r="31" stroke-dasharray="194.8" stroke-dashoffset="194.8"/>
           </svg>
@@ -423,10 +479,11 @@ textarea{resize:vertical;min-height:76px}
     <div id="res-sec" style="display:none">
       <div class="cf" style="margin-top:20px">
         <div class="res-wrap">
-          <div style="font-size:12px;color:var(--tx2);margin-bottom:10px">✦ 生成完成！由 KIE AI Nano Banana 2 提供</div>
-          <img id="res-img" src="" alt="AI 生成效果圖" class="res-img">
+          <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:6px">✦ 生成完成！3 張效果圖</div>
+          <div style="font-size:12px;color:var(--tx2);margin-bottom:20px">由 KIE AI Nano Banana 2 生成｜白天・下午・晚上三種光線</div>
+          <div id="res-imgs-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px"></div>
           <div class="res-acts">
-            <button class="btn bp bsm" onclick="dlResult()">⬇ 下載圖片</button>
+            <button class="btn bp bsm" onclick="dlAllResult()">⬇ 全部下載</button>
             <button class="btn bs bsm" onclick="shareResult()">↗ 分享</button>
             <button class="btn bs bsm" onclick="rdCreate()">重新設計</button>
           </div>
@@ -451,7 +508,7 @@ textarea{resize:vertical;min-height:76px}
         <div class="plan-price">TWD $99</div>
         <div class="plan-pts">⬡ 150 點</div>
         <div class="plan-per">每點約 $0.66</div>
-        <ul><li>可生成 15 張效果圖</li><li>點數永久有效</li><li>適合個人使用</li></ul>
+        <ul><li>可生成 5 組效果圖（共 15 張）</li><li>每組含白天、下午、晚上</li><li>點數永久有效</li></ul>
         <button class="btn bs">立即購買</button>
       </div>
       <div class="plan-card feat" onclick="openPayModal(600,399,'超值點數包 600點')">
@@ -459,7 +516,7 @@ textarea{resize:vertical;min-height:76px}
         <div class="plan-price">TWD $399</div>
         <div class="plan-pts">⬡ 600 點</div>
         <div class="plan-per">每點約 $0.67</div>
-        <ul><li>可生成 60 張效果圖</li><li>點數永久有效</li><li>適合家庭/設計師</li></ul>
+        <ul><li>可生成 20 組效果圖（共 60 張）</li><li>每組含白天、下午、晚上</li><li>點數永久有效</li></ul>
         <button class="btn ba2">立即購買</button>
       </div>
     </div>
@@ -519,7 +576,7 @@ textarea{resize:vertical;min-height:76px}
 <div class="modal-bg" id="m-pts" onclick="closeModal('m-pts')">
   <div class="modal" onclick="event.stopPropagation()">
     <h3>點數不足</h3>
-    <p>您的點數不足以生成效果圖（需要 10 點）。請購買點數方案繼續使用。</p>
+    <p>您的點數不足以生成效果圖（每次需要 30 點，生成白天、下午、晚上 3 張）。請購買點數方案繼續使用。</p>
     <div class="modal-btns">
       <button class="btn bs bsm" onclick="closeModal('m-pts')">取消</button>
       <button class="btn bp bsm" onclick="closeModal('m-pts');go('buy')">購買點數</button>
@@ -670,7 +727,7 @@ function doReg() {
   if (p.length < 6) return authAlert('密碼至少 6 個字元', 'err');
   const us = LS.users();
   if (us.find(u => u.email === e)) return authAlert('此電子郵件已被使用', 'err');
-  const u = { id: uid(), email: e, pw: btoa(p), name: n, points: 20, createdAt: new Date().toISOString() };
+  const u = { id: uid(), email: e, pw: btoa(p), name: n, points: 30, createdAt: new Date().toISOString() };
   us.push(u);
   LS.saveUsers(us);
   localStorage.setItem('cai_cur', u.id);
@@ -692,7 +749,7 @@ function renderDashboard() {
   document.getElementById('d-pts').textContent  = u.points;
   const gs = LS.gens(u.id);
   document.getElementById('d-cnt').textContent = gs.length;
-  document.getElementById('d-rem').textContent = Math.floor(u.points / 10);
+  document.getElementById('d-rem').textContent = Math.floor(u.points / 30);
   const recent = gs.slice(0, 3);
   const el = document.getElementById('d-recent');
   if (!recent.length) {
@@ -764,10 +821,10 @@ async function doGenerate() {
   if (!imgB64)                                    return alert('請先上傳空間照片');
   if (!document.getElementById('c-type').value)   return alert('請選擇窗簾類型');
   if (!selColor)                                  return alert('請選擇窗簾顏色');
-  if (u.points < 10)  { document.getElementById('m-pts').classList.add('open'); return; }
+  if (u.points < 30)  { document.getElementById('m-pts').classList.add('open'); return; }
 
   // Deduct points
-  u.points -= 10; LS.saveUser(u); updateNav();
+  u.points -= 30; LS.saveUser(u); updateNav();
   document.getElementById('cur-pts').textContent = u.points;
 
   const gid  = uid();
@@ -775,36 +832,54 @@ async function doGenerate() {
   const mat  = document.getElementById('c-mat').value;
   const note = document.getElementById('extra-note').value;
 
-  LS.addGen({ id: gid, uid: u.id, imgIn: '', imgOut: null, type, color: selColor.n, mat, note, status: 'pending', pts: 10, ts: new Date().toISOString() });
+  LS.addGen({ id: gid, uid: u.id, imgIn: '', imgOut: null, type, color: selColor.n, mat, note, status: 'pending', pts: 30, ts: new Date().toISOString() });
 
   document.getElementById('create-form').style.display = 'none';
   document.getElementById('prog-sec').style.display    = '';
   document.getElementById('slog').innerHTML = '';
   startProgress();
-  addLog('📤 正在送出任務至 KIE AI Nano Banana 2...');
+  addLog('📤 正在送出 3 個任務（白天、下午、晚上）至 KIE AI...');
+
+  const lightingScenes = [
+    { label: '☀️ 白天', suffix: 'Bright natural daylight, clear sunny day, warm sunlight streaming through windows, bright airy atmosphere.' },
+    { label: '🌇 下午', suffix: 'Warm golden afternoon light, soft sunset glow, gentle orange-tinted natural light through windows, cozy ambiance.' },
+    { label: '🌙 晚上', suffix: 'Evening indoor scene, ceiling lights and warm floor lamps turned on, cozy artificial lighting, dark outside windows, intimate atmosphere.' }
+  ];
 
   try {
-    const taskId = await kieCreateTask(type, mat, note);
-    addLog('✅ 任務建立成功，TaskID: ' + taskId.slice(0, 16) + '...', 'lk');
-    addLog('🔄 開始輪詢任務狀態（每 3 秒）...');
-    await kiePollTask(taskId, gid);
+    addLog('⏳ 同時建立 3 個生成任務...');
+    const taskPromises = lightingScenes.map(scene =>
+      kieCreateTask(type, mat, note, scene.suffix)
+        .then(taskId => { addLog(`✅ ${scene.label} 任務建立：${taskId.slice(0,12)}...`, 'lk'); return { taskId, label: scene.label }; })
+        .catch(err => { addLog(`⚠️ ${scene.label} 建立失敗：${err.message}`, 'le'); return null; })
+    );
+    const tasks = (await Promise.all(taskPromises)).filter(Boolean);
+    if (tasks.length === 0) throw new Error('所有任務建立失敗');
+
+    addLog(`🔄 開始輪詢 ${tasks.length} 個任務狀態...`);
+    const results = await Promise.all(tasks.map(t => kiePollTask(t.taskId, gid, t.label)));
+    const successResults = results.filter(Boolean);
+    if (successResults.length === 0) throw new Error('所有圖片生成失敗');
+    showResult(successResults);
+    addLog(`🎉 完成！成功生成 ${successResults.length}/3 張`, 'lk');
+
   } catch (err) {
     clearTimers();
     addLog('❌ 錯誤：' + err.message, 'le');
-    const u2 = LS.curUser(); u2.points += 10; LS.saveUser(u2); updateNav();
+    const u2 = LS.curUser(); u2.points += 30; LS.saveUser(u2); updateNav();
     LS.updateGen(gid, { status: 'failed' });
     document.getElementById('prog-txt').textContent = '生成失敗，點數已退回';
     document.getElementById('prog-sub').textContent = err.message.slice(0, 60);
     setTimeout(() => {
-      document.getElementById('prog-sec').style.display    = 'none';
+      document.getElementById('prog-sec').style.display = 'none';
       document.getElementById('create-form').style.display = '';
       document.getElementById('cur-pts').textContent = u2.points;
     }, 3500);
   }
 }
 
-async function kieCreateTask(type, mat, note) {
-  const prompt = buildPrompt(type, mat, note);
+async function kieCreateTask(type, mat, note, lightingSuffix = '') {
+  const prompt = buildPrompt(type, mat, note, lightingSuffix);
   const b64 = imgB64.split(',')[1];
   const res = await fetch(CFG.kieBase + '/api/v1/jobs/createTask', {
     method: 'POST',
@@ -817,16 +892,15 @@ async function kieCreateTask(type, mat, note) {
   return d.data.taskId;
 }
 
-async function kiePollTask(taskId, gid) {
+async function kiePollTask(taskId, gid, label = '') {
   let n = 0; const max = 80;
   return new Promise((resolve, reject) => {
     pollTimer = setInterval(async () => {
       n++;
       if (n > max) {
         clearTimers();
-        const u = LS.curUser(); u.points += 10; LS.saveUser(u); updateNav();
         LS.updateGen(gid, { status: 'failed' });
-        reject(new Error('任務逾時（超過 4 分鐘），點數已退回'));
+        reject(new Error('任務逾時（超過 4 分鐘）'));
         return;
       }
       try {
@@ -840,16 +914,14 @@ async function kiePollTask(taskId, gid) {
           clearTimers();
           let urls = []; try { urls = JSON.parse(dd.resultJson || '{}').resultUrls || []; } catch {}
           if (!urls.length) { reject(new Error('生成成功但無圖片 URL')); return; }
-          addLog('🎉 生成成功！', 'lk');
+          addLog(`🎉 ${label} 生成成功！`, 'lk');
           LS.updateGen(gid, { status: 'success', imgOut: urls[0] });
-          genImgUrl = urls[0];
-          showResult(urls[0]);
-          resolve(urls[0]);
+          resolve({ url: urls[0], label });
         } else if (st === 'fail') {
           clearTimers();
           const msg = dd.failMsg || '未知錯誤';
           addLog('❌ 失敗: ' + msg, 'le');
-          const u = LS.curUser(); u.points += 10; LS.saveUser(u); updateNav();
+          const u = LS.curUser(); u.points += 30; LS.saveUser(u); updateNav();
           LS.updateGen(gid, { status: 'failed' });
           reject(new Error('生成失敗: ' + msg));
         } else {
@@ -860,29 +932,40 @@ async function kiePollTask(taskId, gid) {
   });
 }
 
-function buildPrompt(type, mat, note) {
+function buildPrompt(type, mat, note, lightingSuffix = '') {
   let p = `Keep the space identical. Replace or add ${type} curtains to all windows in this room.`;
   p += ` Curtain color: ${selColor.n} (${selColor.h}), Morandi color palette, soft and elegant.`;
   if (mat) p += ` Curtain material: ${mat}, with realistic fabric texture.`;
-  p += ` Maintain original room layout, furniture, lighting and perspective exactly. High-end interior design photo, professional photography, photorealistic.`;
+  p += ` Maintain original room layout, furniture, and perspective exactly. High-end interior design photo, professional photography, photorealistic.`;
+  if (lightingSuffix) p += ` Lighting: ${lightingSuffix}`;
   if (note) p += ` Additional requirements: ${note}.`;
   return p;
 }
 
-function showResult(url) {
+function showResult(results) {
   clearTimers();
+  // results = [{ url, label }, ...]
+  genImgUrl = results[0]?.url || null;
   document.getElementById('prog-sec').style.display = 'none';
   document.getElementById('res-sec').style.display  = '';
-  const img = document.getElementById('res-img');
-  img.src = url;
-  img.onerror = () => { img.src = fallbackSVG(); };
+
+  const container = document.getElementById('res-imgs-container');
+  container.innerHTML = results.map((r, i) => `
+    <div style="text-align:center">
+      <div style="font-size:13px;font-weight:700;color:var(--tx2);margin-bottom:8px;letter-spacing:.5px">${r.label}</div>
+      <img src="${r.url}" alt="${r.label}" class="res-img"
+        style="width:100%;border-radius:16px;box-shadow:var(--shl);display:block;margin-bottom:4px"
+        onerror="this.src='${fallbackSVG()}'">
+      <button class="btn bs bsm" style="margin-top:8px;width:100%" onclick="dlSingle('${r.url}','${r.label}')">⬇ 下載 ${r.label}</button>
+    </div>
+  `).join('');
 }
 
 // Progress helpers
 let progVal = 0;
 function startProgress() {
   progVal = 0;
-  document.getElementById('prog-txt').textContent = '正在送出任務至 Nano Banana 2...';
+  document.getElementById('prog-txt').textContent = '正在送出 3 個任務至 Nano Banana 2...';
   document.getElementById('prog-sub').textContent = '請稍候';
   progTimer = setInterval(() => {
     if (progVal < 88) { progVal += Math.random() * 1.8; setProgress(progVal); }
@@ -926,16 +1009,32 @@ function fallbackSVG() {
 }
 
 // Download / Share
-function dlResult() {
-  if (!genImgUrl) return;
+function dlSingle(url, label) {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   if (isIOS) {
     const w = window.open();
-    w.document.write(`<html><body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;padding:20px"><img src="${genImgUrl}" style="max-width:100%;border-radius:8px"><p style="color:#fff;font-family:sans-serif;margin-top:14px;font-size:13px">長按圖片 → 加入相片</p></body></html>`);
+    w.document.write(`<html><body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;padding:20px"><img src="${url}" style="max-width:100%;border-radius:8px"><p style="color:#fff;font-family:sans-serif;margin-top:14px;font-size:13px">長按圖片 → 加入相片（${label}）</p></body></html>`);
   } else {
-    const a = document.createElement('a'); a.href = genImgUrl; a.download = 'CurtainAI_' + Date.now() + '.png'; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = 'CurtainAI_' + label + '_' + Date.now() + '.png'; a.click();
   }
 }
+function dlAllResult() {
+  // Get all images from container
+  const imgs = document.querySelectorAll('#res-imgs-container img');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS) {
+    const w = window.open();
+    const imgsHtml = Array.from(imgs).map(img => `<img src="${img.src}" style="max-width:100%;border-radius:8px;margin-bottom:16px">`).join('');
+    w.document.write(`<html><body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;padding:20px">${imgsHtml}<p style="color:#fff;font-family:sans-serif;margin-top:14px;font-size:13px">長按各圖片 → 加入相片</p></body></html>`);
+  } else {
+    imgs.forEach((img, i) => {
+      setTimeout(() => {
+        const a = document.createElement('a'); a.href = img.src; a.download = 'CurtainAI_' + (i+1) + '_' + Date.now() + '.png'; a.click();
+      }, i * 600);
+    });
+  }
+}
+function dlResult() { dlAllResult(); }
 async function shareResult() {
   if (!genImgUrl) return;
   if (navigator.share) {
@@ -1081,7 +1180,7 @@ function processPending() {
 //  HISTORY
 // ================================================================
 function histCard(g) {
-  const sm = { success: '成功', failed: '失敗', pending: '處理中' };
+  const sm = { success: '成功（3張）', failed: '失敗', pending: '處理中' };
   const imgH = g.imgOut
     ? `<img src="${g.imgOut}" alt="效果圖" onerror="this.parentElement.innerHTML='<div class=hc-ph>🪟</div>'">`
     : `<div class="hc-ph">🪟</div>`;
@@ -1089,7 +1188,7 @@ function histCard(g) {
     ${imgH}
     <div class="hc-info">
       <h4>${g.type || '未知'} · ${g.color || ''}</h4>
-      <p>${g.mat || ''}</p>
+      <p>${g.mat ? g.mat + ' · ' : ''}☀️🌇🌙 三種光線</p>
       <span class="sbadge ${g.status}">${sm[g.status] || g.status}</span>
     </div>
     ${g.imgOut && g.status === 'success' ? `<div class="hc-acts"><button class="btn bs bsm" onclick="dlFromHistory('${g.id}')">下載</button></div>` : ''}
