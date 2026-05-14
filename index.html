@@ -965,9 +965,8 @@ async function openPayModal(pts, amt, item) {
       TotalAmount:      String(amt),
       TradeDesc:        'CurtainAI%E9%BB%9E%E6%95%B8',
       ItemName:         item,
-      ReturnURL:        baseUrl + '/?pay=ok&pts=' + pts,
+      ReturnURL:        'https://hookb.in/curtainai',
       ClientBackURL:    baseUrl + '/?pay=ok&pts=' + pts,
-      OrderResultURL:   baseUrl + '/?pay=ok&pts=' + pts,
       ChoosePayment:    'Credit',
       EncryptType:      '1',
     };
