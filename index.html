@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<meta name="theme-color" content="#F5F2EE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CurtainAI">
+<meta name="description" content="AI 智能窗簾設計平台，上傳空間照片，AI 生成完美窗簾效果圖">
+<title>CurtainAI — AI 智能窗簾設計</title>
+<link rel="manifest" id="manifest-link">
+<style>
+:root{
+  --bg:#F5F2EE;--sf:#FFF;--sf2:#FAF8F5;--bd:#E8E2D9;--bd2:#D4CCC0;
+  --tx:#2C2520;--tx2:#7A6E65;--tx3:#A89E95;
+  --ac:#8FA3B1;--ac2:#C4A882;--ac3:#9AA885;--dg:#C9929A;
+  --r:12px;--rs:8px;
+  --sh:0 2px 16px rgba(44,37,32,.07);--shl:0 8px 32px rgba(44,37,32,.13);
+  font-family:'PingFang TC','Noto Sans TC','Microsoft JhengHei',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100vh;background:var(--bg);color:var(--tx)}
+/* ---- NAV ---- */
+nav{position:sticky;top:0;z-index:100;background:rgba(245,242,238,.95);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--bd);padding:0 24px;display:flex;align-items:center;
+  justify-content:space-between;height:60px}
+.logo{font-size:19px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--tx)}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--ac),var(--ac2));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.nav-r{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.nb{background:none;border:none;padding:7px 12px;border-radius:var(--rs);cursor:pointer;
+  font-size:13px;color:var(--tx2);transition:all .2s;font-family:inherit;white-space:nowrap}
+.nb:hover{background:var(--sf);color:var(--tx)}
+.nb.pr{background:var(--ac);color:#fff;font-weight:600}.nb.pr:hover{background:#7a93a3}
+.pts-b{background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:4px 13px;
+  font-size:13px;color:var(--ac2);font-weight:700;cursor:pointer;white-space:nowrap}
+/* ---- PAGES ---- */
+.page{display:none;min-height:calc(100vh - 60px)}.page.active{display:block}
+/* ---- BUTTONS ---- */
+.btn{padding:12px 24px;border-radius:var(--r);border:none;cursor:pointer;font-size:14px;
+  font-weight:600;transition:all .2s;font-family:inherit;display:inline-flex;align-items:center;gap:7px}
+.bp{background:var(--ac);color:#fff}.bp:hover{background:#7a93a3;transform:translateY(-1px);box-shadow:var(--sh)}
+.bs{background:var(--sf);color:var(--tx);border:1px solid var(--bd)}.bs:hover{border-color:var(--bd2);transform:translateY(-1px)}
+.ba2{background:var(--ac2);color:#fff}.ba2:hover{background:#b49872;transform:translateY(-1px)}
+.bsm{padding:7px 14px;font-size:13px;border-radius:var(--rs)}
+.bfull{width:100%;justify-content:center}
+/* ---- ALERTS ---- */
+.al{padding:11px 15px;border-radius:var(--rs);font-size:13px;margin-bottom:14px;line-height:1.5}
+.al-ok{background:#EDF7EA;color:#3a7a30;border:1px solid #b8ddb4}
+.al-err{background:#FDECEA;color:#9a3030;border:1px solid #f5c0c0}
+.al-inf{background:#EEF3F7;color:#3a607a;border:1px solid #b8cdd9}
+.al-warn{background:#FFF8E8;color:#8a6a20;border:1px solid #e8d5a0}
+/* ---- FORMS ---- */
+.fg{margin-bottom:16px}
+label{display:block;font-size:12px;color:var(--tx2);margin-bottom:5px;font-weight:500}
+input[type=text],input[type=email],input[type=password],textarea,select{
+  width:100%;padding:10px 13px;border:1px solid var(--bd);border-radius:var(--rs);
+  font-size:14px;background:var(--bg);color:var(--tx);font-family:inherit;
+  transition:border-color .2s;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--ac)}
+textarea{resize:vertical;min-height:76px}
+/* ---- HOME ---- */
+.hero{padding:72px 24px 52px;text-align:center;max-width:780px;margin:0 auto}
+.hero-badge{display:inline-block;background:var(--sf);border:1px solid var(--bd);
+  border-radius:20px;padding:5px 16px;font-size:12px;color:var(--tx2);margin-bottom:22px;letter-spacing:.3px}
+.hero h1{font-size:48px;font-weight:800;line-height:1.12;margin-bottom:18px;letter-spacing:-2px}
+.hero h1 span{color:var(--ac)}
+.hero p{font-size:17px;color:var(--tx2);line-height:1.7;margin-bottom:32px;max-width:480px;margin-left:auto;margin-right:auto}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;
+  max-width:860px;margin:0 auto;padding:0 24px 68px}
+.fc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:26px 22px}
+.fc-icon{font-size:26px;margin-bottom:13px}
+.fc h3{font-size:15px;font-weight:600;margin-bottom:7px}
+.fc p{font-size:13px;color:var(--tx2);line-height:1.6}
+.steps-sec{background:var(--sf);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);padding:56px 24px}
+.steps-in{max-width:760px;margin:0 auto}
+.sec-t{text-align:center;font-size:26px;font-weight:700;margin-bottom:6px;letter-spacing:-.5px}
+.sec-s{text-align:center;color:var(--tx2);margin-bottom:44px;font-size:14px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:22px}
+.step{text-align:center}
+.step-n{width:38px;height:38px;border-radius:50%;background:var(--ac);color:#fff;
+  font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px}
+.step h4{font-size:13px;font-weight:600;margin-bottom:5px}
+.step p{font-size:12px;color:var(--tx2)}
+/* ---- AUTH ---- */
+.auth-wrap{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:40px 24px}
+.auth-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);
+  padding:36px;width:100%;max-width:400px;box-shadow:var(--sh)}
+.auth-tabs{display:flex;border-bottom:1px solid var(--bd);margin-bottom:26px}
+.auth-tab{flex:1;text-align:center;padding:11px;cursor:pointer;font-size:14px;color:var(--tx2);
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s}
+.auth-tab.active{color:var(--ac);border-bottom-color:var(--ac);font-weight:600}
+/* ---- DASHBOARD ---- */
+.dash{max-width:860px;margin:0 auto;padding:36px 24px}
+.dash-hdr{margin-bottom:28px}
+.dash-hdr h2{font-size:24px;font-weight:700;margin-bottom:4px}
+.dash-hdr p{color:var(--tx2);font-size:14px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:28px}
+.sc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:18px}
+.sc-l{font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.sc-v{font-size:26px;font-weight:700}
+.sc-v.a1{color:var(--ac)}.sc-v.a2{color:var(--ac2)}
+.qa{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}
+.empty-s{text-align:center;padding:36px;color:var(--tx3)}
+.empty-s .ei{font-size:36px;margin-bottom:10px}
+/* ---- CREATE ---- */
+.create-wrap{max-width:760px;margin:0 auto;padding:36px 24px}
+.create-wrap h2{font-size:24px;font-weight:700;margin-bottom:5px}
+.create-wrap .sub{color:var(--tx2);margin-bottom:28px;font-size:14px}
+.cf{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:28px}
+.upload-zone{border:2px dashed var(--bd2);border-radius:var(--r);padding:36px;text-align:center;
+  cursor:pointer;transition:all .2s;background:var(--bg)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--ac);background:#eef3f7}
+.upload-zone.has-img{border-style:solid;border-color:var(--ac);padding:10px}
+.upload-zone img{max-width:100%;max-height:240px;border-radius:var(--rs);object-fit:contain;display:block;margin:0 auto}
+.opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:22px 0}
+.color-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:7px}
+.csw{width:100%;aspect-ratio:1;border-radius:var(--rs);cursor:pointer;border:2px solid transparent;
+  transition:all .2s;position:relative}
+.csw:hover{transform:scale(1.09)}
+.csw.sel{border-color:var(--tx);box-shadow:0 0 0 2px #fff inset}
+.csw .tip{display:none;position:absolute;bottom:110%;left:50%;transform:translateX(-50%);
+  background:var(--tx);color:#fff;font-size:10px;padding:3px 7px;border-radius:4px;
+  white-space:nowrap;pointer-events:none;z-index:20}
+.csw:hover .tip{display:block}
+.sd{border:none;border-top:1px solid var(--bd);margin:22px 0}
+.gen-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  gap:10px;margin-top:24px;padding-top:22px;border-top:1px solid var(--bd)}
+.pi{font-size:13px;color:var(--tx2)}.pi strong{color:var(--ac2)}
+/* PROGRESS */
+.prog-wrap{text-align:center;padding:36px}
+.prog-ring{width:76px;height:76px;margin:0 auto 18px}
+.prog-ring circle{fill:none;stroke-width:6}
+.prog-ring .pbg{stroke:var(--bd)}
+.prog-ring .pfg{stroke:var(--ac);stroke-linecap:round;transition:stroke-dashoffset .5s;
+  transform-origin:50% 50%;transform:rotate(-90deg)}
+.prog-txt{font-size:14px;color:var(--tx2);margin-bottom:5px}
+.prog-sub{font-size:12px;color:var(--tx3)}
+.slog{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rs);
+  padding:11px 13px;font-size:11px;color:var(--tx2);margin-top:13px;
+  max-height:110px;overflow-y:auto;font-family:monospace;line-height:1.8}
+.slog .ll{display:block}.slog .lk{color:var(--ac3)}.slog .le{color:var(--dg)}
+/* RESULT */
+.res-wrap{text-align:center}
+.res-img{max-width:100%;border-radius:var(--r);margin-bottom:18px;box-shadow:var(--shl)}
+.res-acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+/* ---- BUY ---- */
+.buy-wrap{max-width:680px;margin:0 auto;padding:36px 24px}
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin:24px 0}
+.plan-card{background:var(--sf);border:1.5px solid var(--bd);border-radius:var(--r);
+  padding:26px;cursor:pointer;transition:all .2s}
+.plan-card:hover{border-color:var(--ac);box-shadow:var(--sh)}
+.plan-card.feat{border-color:var(--ac2)}
+.plan-badge{display:inline-block;background:var(--ac2);color:#fff;font-size:11px;
+  padding:3px 10px;border-radius:20px;margin-bottom:14px;font-weight:600}
+.plan-price{font-size:30px;font-weight:800;margin-bottom:3px}
+.plan-pts{font-size:14px;color:var(--ac);font-weight:600;margin-bottom:5px}
+.plan-per{font-size:11px;color:var(--tx3);margin-bottom:14px}
+.plan-card ul{padding-left:16px;font-size:13px;color:var(--tx2);line-height:2;margin-bottom:16px}
+.plan-card .btn{width:100%;justify-content:center}
+/* ECPay Modal */
+.ep-modal-bg{display:none;position:fixed;inset:0;background:rgba(44,37,32,.45);
+  z-index:300;align-items:center;justify-content:center;padding:20px}
+.ep-modal-bg.open{display:flex}
+.ep-modal{background:var(--sf);border-radius:var(--r);padding:30px;max-width:480px;
+  width:100%;box-shadow:var(--shl);max-height:90vh;overflow-y:auto}
+.ep-modal h3{font-size:18px;font-weight:700;margin-bottom:16px}
+.ep-table{width:100%;border-collapse:collapse;font-size:13px;margin:14px 0}
+.ep-table th{background:var(--bg);padding:8px 12px;text-align:left;color:var(--tx2);
+  font-weight:600;border:1px solid var(--bd);font-size:12px}
+.ep-table td{padding:8px 12px;border:1px solid var(--bd);font-family:monospace;word-break:break-all}
+.ep-table td.hl{color:var(--ac);font-weight:600;font-family:inherit}
+.ep-form{display:none}
+.confirm-area{background:#EDF7EA;border:1px solid #b8ddb4;border-radius:var(--r);
+  padding:20px;margin-top:16px;text-align:center}
+.confirm-area .c-icon{font-size:32px;margin-bottom:10px}
+.confirm-area p{font-size:13px;color:#3a7a30;margin-bottom:14px;line-height:1.5}
+/* ---- HISTORY ---- */
+.hist-wrap{max-width:880px;margin:0 auto;padding:36px 24px}
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.hc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
+.hc img{width:100%;height:168px;object-fit:cover;display:block;background:var(--bg)}
+.hc-ph{width:100%;height:168px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:30px}
+.hc-info{padding:12px}
+.hc-info h4{font-size:13px;font-weight:600;margin-bottom:3px}
+.hc-info p{font-size:12px;color:var(--tx2)}
+.hc-acts{display:flex;gap:7px;padding:0 12px 12px}
+.sbadge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;margin-top:4px}
+.sbadge.success{background:#edf7ea;color:#3a7a30}
+.sbadge.failed{background:#fdecea;color:#9a3030}
+.sbadge.pending{background:#fff5e0;color:#8a6020}
+/* ---- PAY RESULT ---- */
+.pay-result{text-align:center;padding:80px 24px;max-width:460px;margin:0 auto}
+.pay-result .big{font-size:60px;margin-bottom:18px}
+.pay-result h2{font-size:26px;font-weight:700;margin-bottom:11px}
+.pay-result p{color:var(--tx2);margin-bottom:24px;line-height:1.6;font-size:14px}
+/* ---- MODAL ---- */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(44,37,32,.4);
+  z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:var(--sf);border-radius:var(--r);padding:28px;max-width:400px;width:100%;box-shadow:var(--shl)}
+.modal h3{font-size:17px;font-weight:700;margin-bottom:7px}
+.modal p{color:var(--tx2);font-size:13px;line-height:1.6;margin-bottom:16px}
+.modal-btns{display:flex;gap:9px;justify-content:flex-end}
+/* ---- PWA BANNER ---- */
+.pwa-banner{display:none;position:fixed;bottom:14px;left:50%;transform:translateX(-50%);
+  background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);
+  padding:13px 18px;box-shadow:var(--shl);width:calc(100% - 28px);max-width:420px;z-index:150}
+.pwa-banner.show{display:flex;align-items:center;gap:12px}
+.pwa-icon{font-size:26px}.pwa-txt{flex:1}
+.pwa-txt strong{display:block;font-size:13px;margin-bottom:1px}
+.pwa-txt span{font-size:12px;color:var(--tx2)}
+.pwa-btns{display:flex;flex-direction:column;gap:5px}
+/* ---- ANIMATIONS ---- */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+/* ---- RESPONSIVE ---- */
+@media(max-width:640px){
+  .hero h1{font-size:32px}
+  .nb:not(.pr){padding:6px 8px;font-size:12px}
+  .opts-grid{grid-template-columns:1fr}
+  .feats{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="logo" onclick="go('home')">
+    <div class="logo-icon">🪟</div>CurtainAI
+  </a>
+  <div class="nav-r">
+    <button class="nb" onclick="go('home')">首頁</button>
+    <button class="nb" id="n-d" onclick="go('dashboard')" style="display:none">儀表板</button>
+    <button class="nb" id="n-c" onclick="go('create')" style="display:none">製作</button>
+    <button class="nb" id="n-h" onclick="go('history')" style="display:none">記錄</button>
+    <button class="nb" id="n-b" onclick="go('buy')" style="display:none">購買點數</button>
+    <span class="pts-b" id="n-p" onclick="go('buy')" style="display:none">⬡ <span id="npts">0</span> 點</span>
+    <button class="nb" id="n-o" onclick="logout()" style="display:none">登出</button>
+    <button class="nb pr" id="n-i" onclick="go('auth')">登入 / 註冊</button>
+  </div>
+</nav>
+
+<!-- ===== HOME ===== -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-badge">✦ AI 智能窗簾設計 · Nano Banana 2</div>
+    <h1>讓 AI 為您的<br><span>空間設計窗簾</span></h1>
+    <p>上傳空間照片，選擇喜愛的窗簾風格，AI 數十秒生成完美室內效果圖。</p>
+    <div class="hero-btns">
+      <button class="btn bp" onclick="authGo('create')">✦ 免費開始設計</button>
+      <button class="btn bs" onclick="document.getElementById('steps-sec').scrollIntoView({behavior:'smooth'})">了解更多 ↓</button>
+    </div>
+  </div>
+  <div class="feats">
+    <div class="fc"><div class="fc-icon">🖼️</div><h3>真實空間融合</h3><p>AI 精準保留原空間格局，僅替換窗簾，呈現最真實的效果。</p></div>
+    <div class="fc"><div class="fc-icon">🎨</div><h3>莫蘭迪色系</h3><p>精選 20 種莫蘭迪配色，讓每款窗簾都溫柔精緻。</p></div>
+    <div class="fc"><div class="fc-icon">⚡</div><h3>Nano Banana 2</h3><p>採用 Google 最新 AI 影像模型，高品質效果圖。</p></div>
+    <div class="fc"><div class="fc-icon">🎁</div><h3>新用戶免費體驗</h3><p>註冊即贈 20 點，可免費生成 2 張，零風險體驗。</p></div>
+  </div>
+  <div class="steps-sec" id="steps-sec">
+    <div class="steps-in">
+      <div class="sec-t">四步驟完成設計</div>
+      <div class="sec-s">簡單直觀，無需專業知識</div>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><h4>上傳照片</h4><p>上傳您的空間照片（JPG/PNG）</p></div>
+        <div class="step"><div class="step-n">2</div><h4>選擇風格</h4><p>窗簾類型、顏色與材質</p></div>
+        <div class="step"><div class="step-n">3</div><h4>AI 生成</h4><p>Nano Banana 2 處理中</p></div>
+        <div class="step"><div class="step-n">4</div><h4>下載分享</h4><p>儲存或分享效果圖</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AUTH ===== -->
+<div class="page" id="page-auth">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-in" onclick="stab('in')">登入</div>
+        <div class="auth-tab" id="tab-reg" onclick="stab('reg')">註冊</div>
+      </div>
+      <div id="auth-alert"></div>
+      <div id="form-in">
+        <div class="fg"><label>電子郵件</label><input type="email" id="li-e" placeholder="your@email.com" onkeyup="if(event.key==='Enter')doLogin()"></div>
+        <div class="fg"><label>密碼</label><input type="password" id="li-p" placeholder="••••••••" onkeyup="if(event.key==='Enter')doLogin()"></div>
+        <button class="btn bp bfull" onclick="doLogin()">登入</button>
+      </div>
+      <div id="form-reg" style="display:none">
+        <div class="al al-inf">🎁 新用戶註冊即贈 <strong>20 點</strong>，可免費生成 2 張！</div>
+        <div class="fg"><label>顯示名稱</label><input type="text" id="rg-n" placeholder="您的姓名"></div>
+        <div class="fg"><label>電子郵件</label><input type="email" id="rg-e" placeholder="your@email.com"></div>
+        <div class="fg"><label>密碼（至少 6 字元）</label><input type="password" id="rg-p" placeholder="••••••••"></div>
+        <button class="btn bp bfull" onclick="doReg()">建立帳號</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div class="page" id="page-dashboard">
+  <div class="dash">
+    <div class="dash-hdr">
+      <h2>歡迎回來，<span id="d-name"></span> 👋</h2>
+      <p>您的 AI 窗簾設計工作台</p>
+    </div>
+    <div class="stat-grid">
+      <div class="sc"><div class="sc-l">目前點數</div><div class="sc-v a1" id="d-pts">0</div></div>
+      <div class="sc"><div class="sc-l">已生成圖片</div><div class="sc-v" id="d-cnt">0</div></div>
+      <div class="sc"><div class="sc-l">可生成次數</div><div class="sc-v a2" id="d-rem">0</div></div>
+    </div>
+    <div class="qa">
+      <button class="btn bp" onclick="go('create')">✦ 製作窗簾空間</button>
+      <button class="btn bs" onclick="go('buy')">購買點數</button>
+      <button class="btn bs" onclick="go('history')">歷史記錄</button>
+    </div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:14px">最近記錄</div>
+    <div id="d-recent"></div>
+  </div>
+</div>
+
+<!-- ===== CREATE ===== -->
+<div class="page" id="page-create">
+  <div class="create-wrap">
+    <h2>製作窗簾空間</h2>
+    <p class="sub">上傳空間照片，選擇窗簾選項，AI 即時生成效果圖</p>
+
+    <!-- Main Form -->
+    <div class="cf" id="create-form">
+      <!-- 1. Upload -->
+      <div class="fg">
+        <label>① 上傳空間照片 <span style="color:var(--dg)">*</span></label>
+        <div class="upload-zone" id="upz" onclick="document.getElementById('file-in').click()">
+          <div style="font-size:34px;margin-bottom:10px">📷</div>
+          <div style="font-size:14px;color:var(--tx2)">點擊上傳或拖放圖片</div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:5px">支援 JPG、PNG，最大 8MB</div>
+        </div>
+        <input type="file" id="file-in" accept="image/jpeg,image/png" style="display:none" onchange="onFile(event)">
+      </div>
+      <hr class="sd">
+      <div class="opts-grid">
+        <div class="fg">
+          <label>② 窗簾類型 <span style="color:var(--dg)">*</span></label>
+          <select id="c-type">
+            <option value="">請選擇窗簾類型</option>
+            <option>落地窗簾</option><option>半截窗簾</option><option>捲簾</option><option>百葉窗</option>
+            <option>羅馬簾</option><option>蜂巢簾</option><option>紗簾</option><option>遮光窗簾</option>
+            <option>雙層窗簾</option><option>橫式百葉</option><option>竹簾</option><option>木製百葉</option>
+            <option>帷幔式窗簾</option><option>褶皺窗簾</option><option>開合簾</option><option>電動窗簾</option>
+            <option>弧形窗簾</option><option>頂天立地簾</option><option>側拉式捲簾</option><option>透光捲簾</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>④ 窗簾材質</label>
+          <select id="c-mat">
+            <option value="">請選擇材質（選填）</option>
+            <option>棉麻</option><option>亞麻</option><option>絲絨</option><option>雪紡</option>
+            <option>遮光布</option><option>聚酯纖維</option><option>竹纖維</option><option>麂皮絨</option>
+            <option>蕾絲</option><option>天鵝絨</option>
+          </select>
+        </div>
+      </div>
+      <!-- Color -->
+      <div class="fg">
+        <label>③ 窗簾顏色（莫蘭迪色系）<span style="color:var(--dg)">*</span></label>
+        <div id="color-name" style="font-size:12px;color:var(--tx2);margin-bottom:7px;min-height:16px"></div>
+        <div class="color-grid" id="color-grid"></div>
+      </div>
+      <hr class="sd">
+      <div class="fg">
+        <label>⑤ 額外說明（選填）</label>
+        <textarea id="extra-note" placeholder="例如：希望窗簾有層次感、配合北歐風格..."></textarea>
+      </div>
+      <div class="gen-bar">
+        <div class="pi">每次消耗 <strong>10 點</strong> · 目前：<strong id="cur-pts">0</strong> 點</div>
+        <button class="btn bp" id="gen-btn" onclick="doGenerate()">✦ 生成效果圖</button>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div id="prog-sec" style="display:none">
+      <div class="cf" style="margin-top:0">
+        <div class="prog-wrap">
+          <svg class="prog-ring" viewBox="0 0 76 76">
+            <circle class="pbg" cx="38" cy="38" r="31"/>
+            <circle class="pfg" id="prog-circle" cx="38" cy="38" r="31" stroke-dasharray="194.8" stroke-dashoffset="194.8"/>
+          </svg>
+          <div class="prog-txt" id="prog-txt">正在送出任務...</div>
+          <div class="prog-sub" id="prog-sub">請稍候，預計 40–60 秒</div>
+        </div>
+        <div class="slog" id="slog"></div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="res-sec" style="display:none">
+      <div class="cf" style="margin-top:20px">
+        <div class="res-wrap">
+          <div style="font-size:12px;color:var(--tx2);margin-bottom:10px">✦ 生成完成！由 KIE AI Nano Banana 2 提供</div>
+          <img id="res-img" src="" alt="AI 生成效果圖" class="res-img">
+          <div class="res-acts">
+            <button class="btn bp bsm" onclick="dlResult()">⬇ 下載圖片</button>
+            <button class="btn bs bsm" onclick="shareResult()">↗ 分享</button>
+            <button class="btn bs bsm" onclick="rdCreate()">重新設計</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BUY ===== -->
+<div class="page" id="page-buy">
+  <div class="buy-wrap">
+    <h2 style="font-size:24px;font-weight:700;margin-bottom:5px">購買點數</h2>
+    <p style="color:var(--tx2);margin-bottom:20px;font-size:14px">點數不會過期，隨時可用</p>
+    <div class="al al-warn">
+      🧪 <strong>綠界沙盒測試模式</strong>
+      — 付款將跳轉至綠界測試付款頁，完成後自動跳回並入帳，不產生真實扣款。<br>
+      測試卡號：<strong>4311-9522-2222-2222</strong> ｜ CVV：<strong>222</strong> ｜ 有效期：任意未來日期
+    </div>
+    <div class="plan-grid">
+      <div class="plan-card" onclick="openPayModal(150,99,'入門點數包 150點')">
+        <div class="plan-price">TWD $99</div>
+        <div class="plan-pts">⬡ 150 點</div>
+        <div class="plan-per">每點約 $0.66</div>
+        <ul><li>可生成 15 張效果圖</li><li>點數永久有效</li><li>適合個人使用</li></ul>
+        <button class="btn bs">立即購買</button>
+      </div>
+      <div class="plan-card feat" onclick="openPayModal(600,399,'超值點數包 600點')">
+        <div class="plan-badge">超值首選</div>
+        <div class="plan-price">TWD $399</div>
+        <div class="plan-pts">⬡ 600 點</div>
+        <div class="plan-per">每點約 $0.67</div>
+        <ul><li>可生成 60 張效果圖</li><li>點數永久有效</li><li>適合家庭/設計師</li></ul>
+        <button class="btn ba2">立即購買</button>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--tx3);text-align:center">付款安全由綠界金流保障 · 生成失敗點數自動退回</div>
+  </div>
+</div>
+
+<!-- ===== HISTORY ===== -->
+<div class="page" id="page-history">
+  <div class="hist-wrap">
+    <h2 style="font-size:24px;font-weight:700;margin-bottom:5px">歷史記錄</h2>
+    <p style="color:var(--tx2);margin-bottom:24px;font-size:14px">您的所有生成效果圖</p>
+    <div id="hist-grid"></div>
+  </div>
+</div>
+
+<!-- ===== PAY SUCCESS ===== -->
+<div class="page" id="page-pay-ok">
+  <div class="pay-result">
+    <div class="big">✅</div>
+    <h2>付款成功！</h2>
+    <p id="pay-ok-msg">您的點數已成功加入帳戶，可立即開始設計。</p>
+    <button class="btn bp" onclick="go('create')">✦ 立即開始設計</button>
+    <br><br>
+    <button class="btn bs" onclick="go('dashboard')">返回儀表板</button>
+  </div>
+</div>
+
+<!-- ===== PAY FAIL ===== -->
+<div class="page" id="page-pay-fail">
+  <div class="pay-result">
+    <div class="big">❌</div>
+    <h2>付款失敗</h2>
+    <p>付款未能完成，您的點數未被扣除。請重新嘗試。</p>
+    <button class="btn bp" onclick="go('buy')">重新購買</button>
+    <br><br>
+    <button class="btn bs" onclick="go('dashboard')">返回儀表板</button>
+  </div>
+</div>
+
+<!-- ===== ECPAY MODAL ===== -->
+<div class="ep-modal-bg" id="ep-modal-bg">
+  <div class="ep-modal">
+    <h3 id="ep-modal-title">💳 綠界付款</h3>
+    <div id="ep-modal-body">
+      <div style="text-align:center;padding:24px;color:var(--tx2)">
+        <div class="spinner" style="border-color:rgba(0,0,0,.15);border-top-color:var(--ac);width:28px;height:28px;margin:0 auto 12px"></div>
+        正在建立訂單...
+      </div>
+    </div>
+    <!-- Hidden ECPay form -->
+    <form id="ep-form" class="ep-form" method="POST" action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5" target="_blank"></form>
+  </div>
+</div>
+
+<!-- ===== MODAL: 點數不足 ===== -->
+<div class="modal-bg" id="m-pts" onclick="closeModal('m-pts')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>點數不足</h3>
+    <p>您的點數不足以生成效果圖（需要 10 點）。請購買點數方案繼續使用。</p>
+    <div class="modal-btns">
+      <button class="btn bs bsm" onclick="closeModal('m-pts')">取消</button>
+      <button class="btn bp bsm" onclick="closeModal('m-pts');go('buy')">購買點數</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PWA BANNER ===== -->
+<div class="pwa-banner" id="pwa-banner">
+  <div class="pwa-icon">🪟</div>
+  <div class="pwa-txt">
+    <strong>加入主畫面</strong>
+    <span>以 App 方式使用 CurtainAI</span>
+  </div>
+  <div class="pwa-btns">
+    <button class="btn bp bsm" onclick="installPWA()">安裝</button>
+    <button class="btn bs bsm" onclick="dismissPWA()">稍後</button>
+  </div>
+</div>
+
+<script>
+// ================================================================
+//  CONFIG
+// ================================================================
+const CFG = {
+  kieKey:  'd075cdbb4e77102096373752ccf92827',
+  kieBase: 'https://api.kie.ai',
+  epMid:   '2000132',
+  epKey:   '5294y06JbISpM5x9',
+  epIV:    'v77hoKGq4kWxNNIS',
+  epUrl:   'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',
+};
+
+// ================================================================
+//  MORANDI COLORS
+// ================================================================
+const COLORS = [
+  {n:'莫蘭迪灰藍',h:'#8FA3B1'},{n:'莫蘭迪粉紫',h:'#C4AEBE'},
+  {n:'莫蘭迪米白',h:'#E8E0D5'},{n:'莫蘭迪橄欖綠',h:'#9AA885'},
+  {n:'莫蘭迪煙粉',h:'#DDB8A8'},{n:'莫蘭迪奶茶棕',h:'#C4A882'},
+  {n:'莫蘭迪灰綠',h:'#8FA89A'},{n:'莫蘭迪藕紫',h:'#B5A4B3'},
+  {n:'莫蘭迪霧玫瑰',h:'#C9929A'},{n:'莫蘭迪淡藍',h:'#A8BCC8'},
+  {n:'莫蘭迪沙棕',h:'#C9B49A'},{n:'莫蘭迪灰紫',h:'#A59BAE'},
+  {n:'莫蘭迪鼠尾草綠',h:'#A7B8A0'},{n:'莫蘭迪霧白',h:'#EDEAE4'},
+  {n:'莫蘭迪深灰藍',h:'#6E8395'},{n:'莫蘭迪暖灰',h:'#B8B0A8'},
+  {n:'莫蘭迪芥末黃',h:'#C8BC8E'},{n:'莫蘭迪磚紅',h:'#B8897A'},
+  {n:'莫蘭迪冷灰',h:'#A8A8AE'},{n:'莫蘭迪深綠',h:'#7A9484'}
+];
+
+// ================================================================
+//  STATE
+// ================================================================
+let selColor = null;
+let imgB64   = null;
+let genImgUrl = null;
+let pollTimer = null;
+let progTimer = null;
+let deferredPrompt = null;
+
+// ================================================================
+//  STORAGE
+// ================================================================
+const LS = {
+  users: () => { try { return JSON.parse(localStorage.getItem('cai_users') || '[]'); } catch { return []; } },
+  saveUsers: u => localStorage.setItem('cai_users', JSON.stringify(u)),
+  curId: () => localStorage.getItem('cai_cur'),
+  curUser: () => {
+    const id = LS.curId();
+    if (!id) return null;
+    return LS.users().find(u => u.id === id) || null;
+  },
+  saveUser: user => {
+    const us = LS.users();
+    const i = us.findIndex(u => u.id === user.id);
+    if (i >= 0) us[i] = user;
+    LS.saveUsers(us);
+  },
+  gens: uid => { try { return JSON.parse(localStorage.getItem('cai_gens') || '[]').filter(g => g.uid === uid); } catch { return []; } },
+  addGen: g => {
+    try {
+      const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
+      all.unshift(g);
+      localStorage.setItem('cai_gens', JSON.stringify(all.slice(0, 100)));
+    } catch {}
+  },
+  updateGen: (id, upd) => {
+    try {
+      const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
+      const i = all.findIndex(g => g.id === id);
+      if (i >= 0) { all[i] = { ...all[i], ...upd }; localStorage.setItem('cai_gens', JSON.stringify(all)); }
+    } catch {}
+  },
+};
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+// ================================================================
+//  NAVIGATION
+// ================================================================
+function go(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  window.scrollTo(0, 0);
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'history')   renderHistory();
+  if (page === 'create')    rdCreate();
+  if (page === 'pay-ok')    processPending();
+}
+function authGo(page) { LS.curUser() ? go(page) : go('auth'); }
+
+function updateNav() {
+  const u = LS.curUser(), on = !!u;
+  document.getElementById('n-i').style.display = on ? 'none' : '';
+  ['n-o','n-d','n-c','n-h','n-b','n-p'].forEach(id => {
+    document.getElementById(id).style.display = on ? '' : 'none';
+  });
+  if (u) document.getElementById('npts').textContent = u.points;
+}
+
+// ================================================================
+//  AUTH
+// ================================================================
+function stab(t) {
+  document.getElementById('form-in').style.display  = t === 'in'  ? '' : 'none';
+  document.getElementById('form-reg').style.display = t === 'reg' ? '' : 'none';
+  document.getElementById('tab-in').classList.toggle('active', t === 'in');
+  document.getElementById('tab-reg').classList.toggle('active', t === 'reg');
+  document.getElementById('auth-alert').innerHTML = '';
+}
+function authAlert(msg, type) {
+  document.getElementById('auth-alert').innerHTML = `<div class="al al-${type}">${msg}</div>`;
+}
+function doLogin() {
+  const e = document.getElementById('li-e').value.trim();
+  const p = document.getElementById('li-p').value;
+  if (!e || !p) return authAlert('請填寫所有欄位', 'err');
+  const u = LS.users().find(u => u.email === e && u.pw === btoa(p));
+  if (!u) return authAlert('電子郵件或密碼錯誤', 'err');
+  localStorage.setItem('cai_cur', u.id);
+  updateNav();
+  go('dashboard');
+}
+function doReg() {
+  const n = document.getElementById('rg-n').value.trim();
+  const e = document.getElementById('rg-e').value.trim();
+  const p = document.getElementById('rg-p').value;
+  if (!n || !e || !p) return authAlert('請填寫所有欄位', 'err');
+  if (p.length < 6) return authAlert('密碼至少 6 個字元', 'err');
+  const us = LS.users();
+  if (us.find(u => u.email === e)) return authAlert('此電子郵件已被使用', 'err');
+  const u = { id: uid(), email: e, pw: btoa(p), name: n, points: 20, createdAt: new Date().toISOString() };
+  us.push(u);
+  LS.saveUsers(us);
+  localStorage.setItem('cai_cur', u.id);
+  updateNav();
+  go('dashboard');
+}
+function logout() {
+  localStorage.removeItem('cai_cur');
+  updateNav();
+  go('home');
+}
+
+// ================================================================
+//  DASHBOARD
+// ================================================================
+function renderDashboard() {
+  const u = LS.curUser(); if (!u) return;
+  document.getElementById('d-name').textContent = u.name;
+  document.getElementById('d-pts').textContent  = u.points;
+  const gs = LS.gens(u.id);
+  document.getElementById('d-cnt').textContent = gs.length;
+  document.getElementById('d-rem').textContent = Math.floor(u.points / 10);
+  const recent = gs.slice(0, 3);
+  const el = document.getElementById('d-recent');
+  if (!recent.length) {
+    el.innerHTML = `<div class="empty-s"><div class="ei">🪟</div><p>還沒有生成記錄，開始您的第一張設計吧！</p></div>`;
+  } else {
+    el.innerHTML = `<div class="hist-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">${recent.map(histCard).join('')}</div>`;
+  }
+}
+
+// ================================================================
+//  CREATE
+// ================================================================
+function rdCreate() {
+  const u = LS.curUser(); if (!u) { go('auth'); return; }
+  document.getElementById('cur-pts').textContent = u.points;
+  // Color grid
+  document.getElementById('color-grid').innerHTML = COLORS.map((c, i) =>
+    `<div class="csw" style="background:${c.h}" onclick="pickColor(${i})" title="${c.n}"><div class="tip">${c.n}</div></div>`
+  ).join('');
+  selColor = null; imgB64 = null;
+  document.getElementById('color-name').textContent = '';
+  const uz = document.getElementById('upz');
+  uz.className = 'upload-zone';
+  uz.innerHTML = '<div style="font-size:34px;margin-bottom:10px">📷</div><div style="font-size:14px;color:var(--tx2)">點擊上傳或拖放圖片</div><div style="font-size:11px;color:var(--tx3);margin-top:5px">支援 JPG、PNG，最大 8MB</div>';
+  document.getElementById('c-type').value = '';
+  document.getElementById('c-mat').value  = '';
+  document.getElementById('extra-note').value = '';
+  document.getElementById('create-form').style.display = '';
+  document.getElementById('prog-sec').style.display    = 'none';
+  document.getElementById('res-sec').style.display     = 'none';
+  document.getElementById('slog').innerHTML = '';
+  clearTimers();
+}
+
+function pickColor(i) {
+  selColor = COLORS[i];
+  document.querySelectorAll('.csw').forEach((el, j) => el.classList.toggle('sel', j === i));
+  document.getElementById('color-name').textContent = '已選擇：' + selColor.n;
+}
+
+function onFile(ev) {
+  const f = ev.target.files[0]; if (!f) return;
+  if (f.size > 8 * 1024 * 1024) { alert('圖片大小不能超過 8MB'); return; }
+  const r = new FileReader();
+  r.onload = e => {
+    imgB64 = e.target.result;
+    const z = document.getElementById('upz');
+    z.className = 'upload-zone has-img';
+    z.innerHTML = `<img src="${imgB64}" alt="已上傳"><div style="font-size:11px;color:var(--tx2);margin-top:7px;text-align:center">點擊重新選擇</div>`;
+  };
+  r.readAsDataURL(f);
+}
+
+// Drag & drop
+const uz = document.getElementById('upz');
+uz.addEventListener('dragover',  e => { e.preventDefault(); uz.classList.add('drag'); });
+uz.addEventListener('dragleave', () => uz.classList.remove('drag'));
+uz.addEventListener('drop', e => {
+  e.preventDefault(); uz.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) { const dt = new DataTransfer(); dt.items.add(f); document.getElementById('file-in').files = dt.files; onFile({ target: { files: [f] } }); }
+});
+
+// ================================================================
+//  GENERATE
+// ================================================================
+async function doGenerate() {
+  const u = LS.curUser(); if (!u) return go('auth');
+  if (!imgB64)                                    return alert('請先上傳空間照片');
+  if (!document.getElementById('c-type').value)   return alert('請選擇窗簾類型');
+  if (!selColor)                                  return alert('請選擇窗簾顏色');
+  if (u.points < 10)  { document.getElementById('m-pts').classList.add('open'); return; }
+
+  // Deduct points
+  u.points -= 10; LS.saveUser(u); updateNav();
+  document.getElementById('cur-pts').textContent = u.points;
+
+  const gid  = uid();
+  const type = document.getElementById('c-type').value;
+  const mat  = document.getElementById('c-mat').value;
+  const note = document.getElementById('extra-note').value;
+
+  LS.addGen({ id: gid, uid: u.id, imgIn: '', imgOut: null, type, color: selColor.n, mat, note, status: 'pending', pts: 10, ts: new Date().toISOString() });
+
+  document.getElementById('create-form').style.display = 'none';
+  document.getElementById('prog-sec').style.display    = '';
+  document.getElementById('slog').innerHTML = '';
+  startProgress();
+  addLog('📤 正在送出任務至 KIE AI Nano Banana 2...');
+
+  try {
+    const taskId = await kieCreateTask(type, mat, note);
+    addLog('✅ 任務建立成功，TaskID: ' + taskId.slice(0, 16) + '...', 'lk');
+    addLog('🔄 開始輪詢任務狀態（每 3 秒）...');
+    await kiePollTask(taskId, gid);
+  } catch (err) {
+    clearTimers();
+    addLog('❌ 錯誤：' + err.message, 'le');
+    const u2 = LS.curUser(); u2.points += 10; LS.saveUser(u2); updateNav();
+    LS.updateGen(gid, { status: 'failed' });
+    document.getElementById('prog-txt').textContent = '生成失敗，點數已退回';
+    document.getElementById('prog-sub').textContent = err.message.slice(0, 60);
+    setTimeout(() => {
+      document.getElementById('prog-sec').style.display    = 'none';
+      document.getElementById('create-form').style.display = '';
+      document.getElementById('cur-pts').textContent = u2.points;
+    }, 3500);
+  }
+}
+
+async function kieCreateTask(type, mat, note) {
+  const prompt = buildPrompt(type, mat, note);
+  const b64 = imgB64.split(',')[1];
+  const res = await fetch(CFG.kieBase + '/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + CFG.kieKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'nano-banana-2', input: { prompt, image_input: [b64], aspect_ratio: 'auto', resolution: '1K', output_format: 'png' } })
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 80)); }
+  const d = await res.json();
+  if (d.code !== 200 || !d.data?.taskId) throw new Error('任務建立失敗: ' + (d.msg || 'unknown'));
+  return d.data.taskId;
+}
+
+async function kiePollTask(taskId, gid) {
+  let n = 0; const max = 80;
+  return new Promise((resolve, reject) => {
+    pollTimer = setInterval(async () => {
+      n++;
+      if (n > max) {
+        clearTimers();
+        const u = LS.curUser(); u.points += 10; LS.saveUser(u); updateNav();
+        LS.updateGen(gid, { status: 'failed' });
+        reject(new Error('任務逾時（超過 4 分鐘），點數已退回'));
+        return;
+      }
+      try {
+        const r = await fetch(CFG.kieBase + '/api/v1/jobs/recordInfo?taskId=' + taskId, {
+          headers: { 'Authorization': 'Bearer ' + CFG.kieKey }
+        });
+        const d = await r.json(); const dd = d.data; if (!dd) return;
+        const st = dd.state, pct = dd.progress || Math.min(n * 2, 92);
+        setProgress(pct, '狀態：' + st, `輪詢 ${n}/${max}`);
+        if (st === 'success') {
+          clearTimers();
+          let urls = []; try { urls = JSON.parse(dd.resultJson || '{}').resultUrls || []; } catch {}
+          if (!urls.length) { reject(new Error('生成成功但無圖片 URL')); return; }
+          addLog('🎉 生成成功！', 'lk');
+          LS.updateGen(gid, { status: 'success', imgOut: urls[0] });
+          genImgUrl = urls[0];
+          showResult(urls[0]);
+          resolve(urls[0]);
+        } else if (st === 'fail') {
+          clearTimers();
+          const msg = dd.failMsg || '未知錯誤';
+          addLog('❌ 失敗: ' + msg, 'le');
+          const u = LS.curUser(); u.points += 10; LS.saveUser(u); updateNav();
+          LS.updateGen(gid, { status: 'failed' });
+          reject(new Error('生成失敗: ' + msg));
+        } else {
+          addLog(`⏳ ${st} (${pct}%)`);
+        }
+      } catch (e) { addLog('⚠️ 輪詢錯誤: ' + e.message, 'le'); }
+    }, 3000);
+  });
+}
+
+function buildPrompt(type, mat, note) {
+  let p = `Keep the space identical. Replace or add ${type} curtains to all windows in this room.`;
+  p += ` Curtain color: ${selColor.n} (${selColor.h}), Morandi color palette, soft and elegant.`;
+  if (mat) p += ` Curtain material: ${mat}, with realistic fabric texture.`;
+  p += ` Maintain original room layout, furniture, lighting and perspective exactly. High-end interior design photo, professional photography, photorealistic.`;
+  if (note) p += ` Additional requirements: ${note}.`;
+  return p;
+}
+
+function showResult(url) {
+  clearTimers();
+  document.getElementById('prog-sec').style.display = 'none';
+  document.getElementById('res-sec').style.display  = '';
+  const img = document.getElementById('res-img');
+  img.src = url;
+  img.onerror = () => { img.src = fallbackSVG(); };
+}
+
+// Progress helpers
+let progVal = 0;
+function startProgress() {
+  progVal = 0;
+  document.getElementById('prog-txt').textContent = '正在送出任務至 Nano Banana 2...';
+  document.getElementById('prog-sub').textContent = '請稍候';
+  progTimer = setInterval(() => {
+    if (progVal < 88) { progVal += Math.random() * 1.8; setProgress(progVal); }
+  }, 900);
+}
+function setProgress(v, txt, sub) {
+  const c = 194.8, off = c - (Math.min(v, 100) / 100) * c;
+  document.getElementById('prog-circle').style.strokeDashoffset = off;
+  if (txt) document.getElementById('prog-txt').textContent = txt;
+  if (sub) document.getElementById('prog-sub').textContent = sub;
+}
+function addLog(msg, cls) {
+  const el = document.getElementById('slog');
+  const s = document.createElement('span');
+  s.className = 'll' + (cls ? ' ' + cls : '');
+  s.textContent = new Date().toLocaleTimeString('zh-TW') + ' ' + msg;
+  el.appendChild(s);
+  el.scrollTop = el.scrollHeight;
+}
+function clearTimers() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  if (progTimer) { clearInterval(progTimer); progTimer = null; }
+}
+function fallbackSVG() {
+  const c = selColor ? selColor.h : '#8FA3B1';
+  const t = document.getElementById('c-type').value || '窗簾';
+  const s = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="420" viewBox="0 0 600 420">
+    <rect width="600" height="420" fill="#F5F2EE"/>
+    <rect x="40" y="60" width="520" height="300" fill="#E8E2D9" rx="8"/>
+    <rect x="80" y="80" width="180" height="260" fill="#D4CCC0" rx="4"/>
+    <rect x="340" y="80" width="180" height="260" fill="#D4CCC0" rx="4"/>
+    <rect x="80" y="80" width="82" height="260" fill="${c}" opacity=".85" rx="4"/>
+    <rect x="178" y="80" width="82" height="260" fill="${c}" opacity=".65" rx="4"/>
+    <rect x="340" y="80" width="82" height="260" fill="${c}" opacity=".85" rx="4"/>
+    <rect x="438" y="80" width="82" height="260" fill="${c}" opacity=".65" rx="4"/>
+    <rect x="74" y="71" width="193" height="11" fill="#C4A882" rx="5"/>
+    <rect x="334" y="71" width="193" height="11" fill="#C4A882" rx="5"/>
+    <text x="300" y="390" text-anchor="middle" font-size="12" fill="#A89E95" font-family="sans-serif">CurtainAI · ${t} · ${selColor ? selColor.n : ''}</text>
+  </svg>`;
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(s)));
+}
+
+// Download / Share
+function dlResult() {
+  if (!genImgUrl) return;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS) {
+    const w = window.open();
+    w.document.write(`<html><body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;padding:20px"><img src="${genImgUrl}" style="max-width:100%;border-radius:8px"><p style="color:#fff;font-family:sans-serif;margin-top:14px;font-size:13px">長按圖片 → 加入相片</p></body></html>`);
+  } else {
+    const a = document.createElement('a'); a.href = genImgUrl; a.download = 'CurtainAI_' + Date.now() + '.png'; a.click();
+  }
+}
+async function shareResult() {
+  if (!genImgUrl) return;
+  if (navigator.share) {
+    try { await navigator.share({ title: 'CurtainAI 窗簾設計', text: '用 AI 設計的窗簾效果圖！', url: location.href }); return; } catch {}
+  }
+  dlResult();
+}
+
+// ================================================================
+//  ECPAY
+// ================================================================
+async function calcCheckMac(params) {
+  const sorted = Object.keys(params).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  let raw = 'HashKey=' + CFG.epKey + '&' + sorted.map(k => k + '=' + params[k]).join('&') + '&HashIV=' + CFG.epIV;
+  // ECPay URLEncode spec
+  raw = encodeURIComponent(raw)
+    .replace(/%20/g, '+').replace(/!/g, '%21').replace(/'/g, '%27')
+    .replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\*/g, '%2A').replace(/~/g, '%7E')
+    .toLowerCase();
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
+async function openPayModal(pts, amt, item) {
+  const u = LS.curUser(); if (!u) { go('auth'); return; }
+
+  // Show modal loading
+  document.getElementById('ep-modal-bg').classList.add('open');
+  document.getElementById('ep-modal-title').textContent = '💳 綠界付款';
+  document.getElementById('ep-modal-body').innerHTML = `
+    <div style="text-align:center;padding:24px;color:var(--tx2)">
+      <div style="width:28px;height:28px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px"></div>
+      正在建立訂單...
+    </div>`;
+
+  try {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const tradeDate = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    const tradeNo   = 'CAI' + String(Date.now()).slice(-14); // max 20 chars
+
+    // Build return URL back to this file
+    // Use origin for Vercel, fallback to full path for localhost
+    const baseUrl = location.origin !== 'null' && location.origin !== 'file://'
+      ? location.origin + location.pathname.replace(/\/[^\/]*$/, '/')
+      : location.href.split('?')[0].split('#')[0];
+
+    const params = {
+      MerchantID:       CFG.epMid,
+      MerchantTradeNo:  tradeNo,
+      MerchantTradeDate: tradeDate,
+      PaymentType:      'aio',
+      TotalAmount:      String(amt),
+      TradeDesc:        'CurtainAI%E9%BB%9E%E6%95%B8',
+      ItemName:         item,
+      ReturnURL:        baseUrl, // server notify (won't fire in file mode)
+      ClientBackURL:    baseUrl + '?pay=ok&pts=' + pts,
+      OrderResultURL:   baseUrl + '?pay=ok&pts=' + pts,
+      ChoosePayment:    'Credit',
+      EncryptType:      '1',
+    };
+
+    const cmv = await calcCheckMac(params);
+    const allParams = { ...params, CheckMacValue: cmv };
+
+    // Save pending
+    localStorage.setItem('cai_pending', JSON.stringify({ pts, amt, item, userId: u.id, tradeNo }));
+
+    // Fill ECPay form
+    const form = document.getElementById('ep-form');
+    form.innerHTML = '';
+    form.action = CFG.epUrl;
+    Object.entries(allParams).forEach(([k, v]) => {
+      const inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = k; inp.value = v;
+      form.appendChild(inp);
+    });
+
+    // Update modal content
+    document.getElementById('ep-modal-body').innerHTML = `
+      <div class="al al-inf" style="font-size:13px">
+        ✅ 訂單建立成功！點擊下方按鈕前往綠界沙盒付款頁面（會在新頁籤開啟）。
+      </div>
+      <table class="ep-table">
+        <tr><th>商品</th><td class="hl">${item}</td></tr>
+        <tr><th>金額</th><td class="hl">TWD $${amt}</td></tr>
+        <tr><th>點數</th><td class="hl">+${pts} 點</td></tr>
+        <tr><th>訂單編號</th><td>${tradeNo}</td></tr>
+      </table>
+      <button class="btn bp bfull" style="font-size:15px;padding:14px" onclick="submitECPay()">
+        💳 前往綠界付款頁面
+      </button>
+      <div class="al al-warn" style="margin-top:14px;font-size:13px">
+        💡 付款完成後，綠界將自動跳回本網站並入帳，無需任何手動操作。
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn bs bsm" onclick="document.getElementById('ep-modal-bg').classList.remove('open')">取消</button>
+      </div>`;
+  } catch (e) {
+    document.getElementById('ep-modal-body').innerHTML = `<div class="al al-err">❌ 建立訂單失敗：${e.message}</div>`;
+  }
+}
+
+function submitECPay() {
+  const form = document.getElementById('ep-form');
+  form.target = '_blank';
+  form.submit();
+}
+
+function confirmPayment(pts) {
+  const raw = localStorage.getItem('cai_pending');
+  let addPts = pts;
+  if (raw) { try { addPts = JSON.parse(raw).pts || pts; } catch {} }
+  const u = LS.curUser();
+  if (u) {
+    u.points += addPts; LS.saveUser(u); updateNav();
+    document.getElementById('pay-ok-msg').textContent = `已成功加入 ${addPts} 點！目前共有 ${u.points} 點。`;
+  }
+  localStorage.removeItem('cai_pending');
+  document.getElementById('ep-modal-bg').classList.remove('open');
+  go('pay-ok');
+}
+
+function processPending() {
+  // Called when returning from ECPay via URL param (?pay=ok)
+  const params = new URLSearchParams(location.search);
+  if (params.get('pay') === 'ok') {
+    const raw = localStorage.getItem('cai_pending');
+    if (raw) {
+      try {
+        const p = JSON.parse(raw);
+        const u = LS.curUser();
+        if (u && u.id === p.userId) {
+          u.points += p.pts; LS.saveUser(u); updateNav();
+          document.getElementById('pay-ok-msg').textContent =
+            `🎉 已成功加入 ${p.pts} 點！目前共有 ${u.points} 點，可生成 ${Math.floor(u.points/10)} 張效果圖。`;
+        }
+        localStorage.removeItem('cai_pending');
+      } catch {}
+    }
+    // Clean URL so refresh won't re-trigger
+    history.replaceState({}, '', location.pathname);
+  }
+}
+
+// ================================================================
+//  HISTORY
+// ================================================================
+function histCard(g) {
+  const sm = { success: '成功', failed: '失敗', pending: '處理中' };
+  const imgH = g.imgOut
+    ? `<img src="${g.imgOut}" alt="效果圖" onerror="this.parentElement.innerHTML='<div class=hc-ph>🪟</div>'">`
+    : `<div class="hc-ph">🪟</div>`;
+  return `<div class="hc">
+    ${imgH}
+    <div class="hc-info">
+      <h4>${g.type || '未知'} · ${g.color || ''}</h4>
+      <p>${g.mat || ''}</p>
+      <span class="sbadge ${g.status}">${sm[g.status] || g.status}</span>
+    </div>
+    ${g.imgOut && g.status === 'success' ? `<div class="hc-acts"><button class="btn bs bsm" onclick="dlFromHistory('${g.id}')">下載</button></div>` : ''}
+  </div>`;
+}
+function renderHistory() {
+  const u = LS.curUser(); if (!u) return;
+  const gs = LS.gens(u.id);
+  const el = document.getElementById('hist-grid');
+  if (!gs.length) {
+    el.innerHTML = `<div class="empty-s"><div class="ei">🪟</div><p>還沒有生成記錄</p><br><button class="btn bp bsm" onclick="go('create')">開始設計</button></div>`;
+    return;
+  }
+  el.className = 'hist-grid';
+  el.innerHTML = gs.map(histCard).join('');
+}
+function dlFromHistory(id) {
+  try {
+    const g = JSON.parse(localStorage.getItem('cai_gens') || '[]').find(g => g.id === id);
+    if (g?.imgOut) { genImgUrl = g.imgOut; dlResult(); }
+  } catch {}
+}
+
+// ================================================================
+//  MODAL
+// ================================================================
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ================================================================
+//  PWA
+// ================================================================
+// Inline manifest
+const manifest = {
+  name: 'CurtainAI — AI 窗簾設計',
+  short_name: 'CurtainAI',
+  description: '用 AI 為您的空間設計完美窗簾',
+  start_url: './',
+  display: 'standalone',
+  background_color: '#F5F2EE',
+  theme_color: '#8FA3B1',
+  icons: [
+    { src: "data:image/svg+xml;base64," + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="#8FA3B1"/><text y="140" x="30" font-size="120">🪟</text></svg>'), sizes: '192x192', type: 'image/svg+xml' },
+    { src: "data:image/svg+xml;base64," + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#8FA3B1"/><text y="380" x="60" font-size="340">🪟</text></svg>'), sizes: '512x512', type: 'image/svg+xml' }
+  ]
+};
+const mBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+document.getElementById('manifest-link').href = URL.createObjectURL(mBlob);
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  if (!localStorage.getItem('pwa_dismissed')) {
+    setTimeout(() => document.getElementById('pwa-banner').classList.add('show'), 4000);
+  }
+});
+function installPWA() {
+  document.getElementById('pwa-banner').classList.remove('show');
+  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => deferredPrompt = null); }
+}
+function dismissPWA() {
+  document.getElementById('pwa-banner').classList.remove('show');
+  localStorage.setItem('pwa_dismissed', '1');
+}
+
+// ================================================================
+//  INIT
+// ================================================================
+updateNav();
+// Handle return from ECPay
+const urlParams = new URLSearchParams(location.search);
+if (urlParams.get('pay') === 'ok') {
+  processPending();
+  go('pay-ok');
+} else if (urlParams.get('pay') === 'fail') {
+  go('pay-fail');
+}
+</script>
+</body>
+</html>
