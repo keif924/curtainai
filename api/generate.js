@@ -28,6 +28,13 @@ export default async function handler(req, res) {
     }
 
     // 呼叫 KIE AI
+    // 處理圖片：KIE AI 接受 URL 或 base64，這裡用 base64 data URL 格式
+    const processedImages = (image_input || []).map(img => {
+      // 如果已經是完整 data URL 就直接用，否則假設是純 base64 JPEG
+      if (img.startsWith('data:')) return img;
+      return `data:image/jpeg;base64,${img}`;
+    });
+
     const kieRes = await fetch(`${KIE_BASE}/api/v1/jobs/createTask`, {
       method: 'POST',
       headers: {
@@ -38,7 +45,7 @@ export default async function handler(req, res) {
         model: 'nano-banana-2',
         input: {
           prompt,
-          image_input: image_input || [],
+          image_input: processedImages,
           aspect_ratio: aspect_ratio || 'auto',
           resolution: resolution || '1K',
           output_format: output_format || 'png',
