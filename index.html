@@ -394,7 +394,7 @@ textarea{resize:vertical;min-height:76px}
       <div class="steps">
         <div class="step"><div class="step-n">1</div><h4>上傳照片</h4><p>上傳您的空間照片（JPG/PNG）</p></div>
         <div class="step"><div class="step-n">2</div><h4>選擇風格</h4><p>窗簾類型、顏色與材質</p></div>
-        <div class="step"><div class="step-n">3</div><h4>AI 生成</h4><p>Nano Banana 2 處理中</p></div>
+        <div class="step"><div class="step-n">3</div><h4>AI 生成</h4><p>Nano Banana Edit 處理中</p></div>
         <div class="step"><div class="step-n">4</div><h4>下載分享</h4><p>儲存或分享效果圖</p></div>
       </div>
     </div>
@@ -452,7 +452,7 @@ textarea{resize:vertical;min-height:76px}
 <div class="page" id="page-create">
   <div class="create-wrap">
     <h2>製作窗簾空間</h2>
-    <p class="sub">上傳空間照片，選擇窗簾選項，AI 同時生成白天、下午、晚上 3 張效果圖</p>
+    <p class="sub">上傳空間照片，選擇窗簾選項，AI 同時生成白天、下午、晚上效果圖 + 材質特寫，共 4 張</p>
 
     <!-- Main Form -->
     <div class="cf" id="create-form">
@@ -472,21 +472,26 @@ textarea{resize:vertical;min-height:76px}
           <label>② 窗簾類型 <span style="color:var(--dg)">*</span></label>
           <select id="c-type">
             <option value="">請選擇窗簾類型</option>
-            <option>落地窗簾</option><option>半截窗簾</option><option>捲簾</option><option>百葉窗</option>
-            <option>羅馬簾</option><option>蜂巢簾</option><option>紗簾</option><option>遮光窗簾</option>
-            <option>雙層窗簾</option><option>橫式百葉</option><option>竹簾</option><option>木製百葉</option>
-            <option>帷幔式窗簾</option><option>褶皺窗簾</option><option>開合簾</option><option>電動窗簾</option>
-            <option>弧形窗簾</option><option>頂天立地簾</option><option>側拉式捲簾</option><option>透光捲簾</option>
+            <option value="blackout curtain">遮光布簾</option>
+            <option value="ripple fold curtain">蛇行簾</option>
+            <option value="sheer curtain">紗簾</option>
+            <option value="vertical sheer curtain">直立式柔紗簾</option>
+            <option value="vertical blind panel curtain">直立簾｜片簾</option>
+            <option value="roller blind">捲簾</option>
+            <option value="dual shade zebra blind">調光簾</option>
+            <option value="cellular honeycomb blind">風琴簾</option>
+            <option value="horizontal venetian blind">百葉</option>
+            <option value="sheer shade soft blind">橫式柔絲百葉</option>
+            <option value="roman blind">羅馬簾</option>
+            <option value="wooden shutter">實木百葉門窗</option>
           </select>
         </div>
         <div class="fg">
           <label>④ 窗簾材質</label>
           <select id="c-mat">
-            <option value="">請選擇材質（選填）</option>
-            <option>棉麻</option><option>亞麻</option><option>絲絨</option><option>雪紡</option>
-            <option>遮光布</option><option>聚酯纖維</option><option>竹纖維</option><option>麂皮絨</option>
-            <option>蕾絲</option><option>天鵝絨</option>
+            <option value="">請先選擇窗簾類型</option>
           </select>
+          <div id="mat-hint" style="font-size:11px;color:var(--tx3);margin-top:4px"></div>
         </div>
       </div>
       <!-- Color -->
@@ -526,7 +531,7 @@ textarea{resize:vertical;min-height:76px}
     <div id="res-sec" style="display:none">
       <div class="cf" style="margin-top:20px">
         <div class="res-wrap">
-          <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:6px">✦ 生成完成！3 張效果圖</div>
+          <div style="font-size:13px;font-weight:700;color:var(--tx);margin-bottom:6px">✦ 生成完成！4 張效果圖</div>
           <div style="font-size:12px;color:var(--tx2);margin-bottom:20px">由 KIE AI Nano Banana 2 生成｜白天・下午・晚上三種光線</div>
           <div id="res-imgs-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px"></div>
           <div class="res-acts">
@@ -657,6 +662,60 @@ const CFG = {
   epUrl:   'https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5',
 };
 
+
+// 窗簾類型中英對照
+const CURTAIN_TYPES = {
+  'blackout curtain': '遮光布簾',
+  'ripple fold curtain': '蛇行簾',
+  'sheer curtain': '紗簾',
+  'vertical sheer curtain': '直立式柔紗簾',
+  'vertical blind panel curtain': '直立簾｜片簾',
+  'roller blind': '捲簾',
+  'dual shade zebra blind': '調光簾',
+  'cellular honeycomb blind': '風琴簾',
+  'horizontal venetian blind': '百葉',
+  'sheer shade soft blind': '橫式柔絲百葉',
+  'roman blind': '羅馬簾',
+  'wooden shutter': '實木百葉門窗',
+};
+function ctName(val) { return CURTAIN_TYPES[val] || val; }
+
+// 各窗簾類型對應材質
+const CURTAIN_MATERIALS = {
+  'blackout curtain':          ['遮光三明治布','棉麻','緹花布','聚酯纖維','絲絨'],
+  'ripple fold curtain':       ['遮光三明治布','棉麻','緹花布','聚酯纖維'],
+  'sheer curtain':             ['雪紡紗','棉紗','聚酯紗','棒棒紗'],
+  'vertical sheer curtain':    ['聚酯纖維','尼龍布紗'],
+  'vertical blind panel curtain': ['PVC','聚酯纖維','玻璃纖維'],
+  'roller blind':              ['PVC','聚酯纖維','防水布','遮光布'],
+  'dual shade zebra blind':    ['雙層布紗','聚酯纖維'],
+  'cellular honeycomb blind':  ['無紡布','聚酯纖維'],
+  'horizontal venetian blind': ['鋁合金','實木','仿木 PVC','竹製'],
+  'sheer shade soft blind':    ['聚酯纖維布紗','尼龍'],
+  'roman blind':               ['棉麻','緹花布','棒棒紗','遮光布'],
+  'wooden shutter':            ['實木'],
+};
+
+// 當窗簾類型改變時，動態更新材質選單
+function updateMaterials(typeVal) {
+  const matSel = document.getElementById('c-mat');
+  const hint = document.getElementById('mat-hint');
+  const mats = CURTAIN_MATERIALS[typeVal] || [];
+  if (!typeVal || !mats.length) {
+    matSel.innerHTML = '<option value="">請先選擇窗簾類型</option>';
+    if (hint) hint.textContent = '';
+    return;
+  }
+  matSel.innerHTML = '<option value="">請選擇材質（選填）</option>' +
+    mats.map(m => `<option value="${m}">${m}</option>`).join('');
+  // 若只有一種材質（如實木），自動選取並提示
+  if (mats.length === 1) {
+    matSel.value = mats[0];
+    if (hint) hint.textContent = `此類型僅有 ${mats[0]} 一種材質，已自動選取`;
+  } else {
+    if (hint) hint.textContent = '';
+  }
+}
 // ================================================================
 //  MORANDI COLORS
 // ================================================================
@@ -822,7 +881,11 @@ function rdCreate() {
   uz.className = 'upload-zone';
   uz.innerHTML = '<div style="font-size:34px;margin-bottom:10px">📷</div><div style="font-size:14px;color:var(--tx2)">點擊上傳或拖放圖片</div><div style="font-size:11px;color:var(--tx3);margin-top:5px">支援 JPG、PNG，最大 8MB</div>';
   document.getElementById('c-type').value = '';
-  document.getElementById('c-mat').value  = '';
+  document.getElementById('c-type').onchange = function() {
+    updateMaterials(this.value);
+  };
+  document.getElementById('c-mat').innerHTML = '<option value="">請先選擇窗簾類型</option>';
+  const mh = document.getElementById('mat-hint'); if(mh) mh.textContent = '';
   document.getElementById('extra-note').value = '';
   document.getElementById('create-form').style.display = '';
   document.getElementById('prog-sec').style.display    = 'none';
@@ -885,21 +948,26 @@ async function doGenerate() {
   document.getElementById('prog-sec').style.display    = '';
   document.getElementById('slog').innerHTML = '';
   startProgress();
-  addLog('📤 正在送出 3 個任務（白天、下午、晚上）至 KIE AI...');
+  addLog('📤 正在送出 4 個任務（白天、下午、晚上 + 材質特寫）至 KIE AI...');
 
   const lightingScenes = [
     { label: '☀️ 白天', suffix: 'Bright natural daylight, clear sunny day, warm sunlight streaming through windows, bright airy atmosphere.' },
     { label: '🌇 下午', suffix: 'Warm golden afternoon light, soft sunset glow, gentle orange-tinted natural light through windows, cozy ambiance.' },
-    { label: '🌙 晚上', suffix: 'Evening indoor scene, ceiling lights and warm floor lamps turned on, cozy artificial lighting, dark outside windows, intimate atmosphere.' }
+    { label: '🌙 晚上', suffix: 'Evening indoor scene, ceiling lights and warm floor lamps turned on, cozy artificial lighting, dark outside windows, intimate atmosphere.' },
+    { label: '🔍 材質特寫', isSwatch: true, suffix: '' }
   ];
 
   try {
     addLog('⏳ 同時建立 3 個生成任務...');
-    const taskPromises = lightingScenes.map(scene =>
-      kieCreateTask(type, mat, note, scene.suffix)
+    const taskPromises = lightingScenes.map(scene => {
+      // 材質特寫：使用獨立 prompt，不需要空間照片作為背景
+      const taskPromise = scene.isSwatch
+        ? kieCreateSwatch(type, mat)
+        : kieCreateTask(type, mat, note, scene.suffix);
+      return taskPromise
         .then(taskId => { addLog(`✅ ${scene.label} 任務建立：${taskId.slice(0,12)}...`, 'lk'); return { taskId, label: scene.label }; })
-        .catch(err => { addLog(`⚠️ ${scene.label} 建立失敗：${err.message}`, 'le'); return null; })
-    );
+        .catch(err => { addLog(`⚠️ ${scene.label} 建立失敗：${err.message}`, 'le'); return null; });
+    });
     const tasks = (await Promise.all(taskPromises)).filter(Boolean);
     if (tasks.length === 0) throw new Error('所有任務建立失敗');
 
@@ -908,7 +976,7 @@ async function doGenerate() {
     const successResults = results.filter(Boolean);
     if (successResults.length === 0) throw new Error('所有圖片生成失敗');
     showResult(successResults);
-    addLog(`🎉 完成！成功生成 ${successResults.length}/3 張`, 'lk');
+    addLog(`🎉 完成！成功生成 ${successResults.length}/4 張`, 'lk');
 
   } catch (err) {
     clearTimers();
@@ -943,6 +1011,36 @@ async function kieCreateTask(type, mat, note, lightingSuffix = '') {
   if (!res.ok) { const t = await res.text(); throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 80)); }
   const d = await res.json();
   if (d.code !== 200 || !d.data?.taskId) throw new Error('任務建立失敗: ' + (d.msg || 'unknown'));
+  return d.data.taskId;
+}
+
+// 生成材質特寫圖（不使用空間照片，純文字 prompt）
+async function kieCreateSwatch(type, mat) {
+  const typeName = ctName(type) || type;
+  const matName = mat || '聚酯纖維';
+  const colorName = selColor ? selColor.n : '莫蘭迪色';
+  const colorHex = selColor ? selColor.h : '#C4A882';
+
+  // 特寫 prompt：專注在布料質感細節
+  const prompt = `Professional close-up product photography of ${type} fabric swatch. ` +
+    `Material: ${matName}. Color: ${colorName} (${colorHex}), Morandi palette tone. ` +
+    `Show realistic fabric texture, weave pattern, and surface detail clearly. ` +
+    `Clean white or light neutral background. Studio lighting, macro photography, ` +
+    `high resolution, sharp focus on fabric texture. ` +
+    `No curtain rod or room visible, fabric only. ` +
+    `Label style: elegant product catalog photo for ${typeName}.`;
+
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      image_input: [], // 不需要空間照片
+    })
+  });
+  if (!res.ok) { const t = await res.text(); throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 80)); }
+  const d = await res.json();
+  if (d.code !== 200 || !d.data?.taskId) throw new Error('材質特寫任務建立失敗: ' + (d.msg || 'unknown'));
   return d.data.taskId;
 }
 
@@ -986,12 +1084,15 @@ async function kiePollTask(taskId, gid, label = '') {
 }
 
 function buildPrompt(type, mat, note, lightingSuffix = '') {
-  let p = `Keep the space identical. Replace or add ${type} curtains to all windows in this room.`;
-  p += ` Curtain color: ${selColor.n} (${selColor.h}), Morandi color palette, soft and elegant.`;
-  if (mat) p += ` Curtain material: ${mat}, with realistic fabric texture.`;
-  p += ` Maintain original room layout, furniture, and perspective exactly. High-end interior design photo, professional photography, photorealistic.`;
-  if (lightingSuffix) p += ` Lighting: ${lightingSuffix}`;
-  if (note) p += ` Additional requirements: ${note}.`;
+  // type 是英文精確描述（來自 option value），直接用於 AI prompt
+  let p = `Keep the original room layout, furniture, walls, floors and all elements completely identical. `;
+  p += `Only add or replace the window treatment with a ${type}. `;
+  p += `The curtain color must be ${selColor.n} (hex ${selColor.h}), a Morandi palette tone, subtle and elegant. `;
+  if (mat) p += `Fabric material: ${mat} with realistic texture. `;
+  p += `Do not change anything else in the room. `;
+  p += `Photorealistic interior design render, professional photography style, sharp details.`;
+  if (lightingSuffix) p += ` ${lightingSuffix}`;
+  if (note) p += ` Extra: ${note}.`;
   return p;
 }
 
@@ -1003,22 +1104,25 @@ function showResult(results) {
   document.getElementById('res-sec').style.display  = '';
 
   const container = document.getElementById('res-imgs-container');
-  container.innerHTML = results.map((r, i) => `
-    <div style="text-align:center">
+  container.innerHTML = results.map((r, i) => {
+    const isSwatch = r.label.includes('材質特寫');
+    return `<div style="text-align:center">
       <div style="font-size:13px;font-weight:700;color:var(--tx2);margin-bottom:8px;letter-spacing:.5px">${r.label}</div>
-      <img src="${r.url}" alt="${r.label}" class="res-img"
-        style="width:100%;border-radius:16px;box-shadow:var(--shl);display:block;margin-bottom:4px"
+      ${isSwatch ? `<div style="font-size:11px;color:var(--ac2);margin-bottom:8px;background:var(--ac-l);border-radius:8px;padding:5px 10px">📋 可截圖此圖拿給窗簾店，說明您選擇的類型與材質</div>` : ''}
+      <img src="${r.url}" alt="${r.label}"
+        style="width:100%;border-radius:${isSwatch ? '12px' : '16px'};box-shadow:var(--shl);display:block;margin-bottom:4px${isSwatch ? ';border:2px solid var(--ac)' : ''}"
         onerror="this.src='${fallbackSVG()}'">
-      <button class="btn bs bsm" style="margin-top:8px;width:100%" onclick="dlSingle('${r.url}','${r.label}')">⬇ 下載 ${r.label}</button>
-    </div>
-  `).join('');
+      ${isSwatch ? `<div style="font-size:11px;color:var(--tx2);margin-bottom:6px">類型：${ctName(document.getElementById('c-type')?.value)} ／ 材質：${document.getElementById('c-mat')?.value || '－'} ／ 顏色：${selColor?.n || '－'}</div>` : ''}
+      <button class="btn bs bsm" style="margin-top:6px;width:100%" onclick="dlSingle('${r.url}','${r.label}')">⬇ 下載 ${r.label}</button>
+    </div>`;
+  }).join('');
 }
 
 // Progress helpers
 let progVal = 0;
 function startProgress() {
   progVal = 0;
-  document.getElementById('prog-txt').textContent = '正在送出 3 個任務至 Nano Banana 2...';
+  document.getElementById('prog-txt').textContent = '正在送出 3 個任務至 Nano Banana Edit...';
   document.getElementById('prog-sub').textContent = '請稍候';
   progTimer = setInterval(() => {
     if (progVal < 88) { progVal += Math.random() * 1.8; setProgress(progVal); }
@@ -1240,7 +1344,7 @@ function histCard(g) {
   return `<div class="hc">
     ${imgH}
     <div class="hc-info">
-      <h4>${g.type || '未知'} · ${g.color || ''}</h4>
+      <h4>${ctName(g.type) || g.type || '未知'} · ${g.color || ''}</h4>
       <p>${g.mat ? g.mat + ' · ' : ''}☀️🌇🌙 三種光線</p>
       <span class="sbadge ${g.status}">${sm[g.status] || g.status}</span>
     </div>
