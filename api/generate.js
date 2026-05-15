@@ -1,6 +1,6 @@
 // Vercel Serverless Function — KIE AI 代理
-// 使用 nano-banana-edit 模型（支援圖片輸入）
-// 圖片以 base64 data URL 方式傳送
+// 模型：google/nano-banana-edit（Image to Image）
+// 流程：base64 → 上傳 KIE 取得 URL → 呼叫生成 API
 
 const KIE_KEY = process.env.KIE_API_KEY || 'd075cdbb4e77102096373752ccf92827';
 const KIE_BASE = 'https://api.kie.ai';
@@ -17,82 +17,71 @@ export default async function handler(req, res) {
     const { prompt, image_input } = req.body;
     if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
 
-    // 處理圖片：先嘗試上傳取得 URL，失敗則直接用 base64
     let imageUrl = null;
 
+    // 步驟 1: 上傳圖片到 KIE，取得可公開訪問的 URL
     if (image_input && image_input.length > 0) {
       const dataUrl = image_input[0];
-      
-      // 嘗試用 KIE File Upload API 上傳圖片
+      const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+
+      if (!matches) return res.status(400).json({ error: 'Invalid image format' });
+
+      const mimeType = matches[1];
+      const base64Data = matches[2];
+      const buffer = Buffer.from(base64Data, 'base64');
+      const ext = mimeType.split('/')[1] || 'jpg';
+      const boundary = '----VercelBoundary' + Date.now().toString(16);
+      const CRLF = '\r\n';
+
+      const head = Buffer.from(
+        `--${boundary}${CRLF}` +
+        `Content-Disposition: form-data; name="file"; filename="image.${ext}"${CRLF}` +
+        `Content-Type: ${mimeType}${CRLF}` +
+        `${CRLF}`,
+        'utf8'
+      );
+      const foot = Buffer.from(`${CRLF}--${boundary}--${CRLF}`, 'utf8');
+      const bodyBuf = Buffer.concat([head, buffer, foot]);
+
       try {
-        const matches = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-        if (matches) {
-          const mimeType = matches[1];
-          const base64Data = matches[2];
-          const buffer = Buffer.from(base64Data, 'base64');
-          const ext = mimeType.split('/')[1] || 'jpg';
+        const uploadRes = await fetch(`${KIE_BASE}/api/v1/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${KIE_KEY}`,
+            'Content-Type': `multipart/form-data; boundary=${boundary}`,
+          },
+          body: bodyBuf,
+        });
 
-          // 用 multipart/form-data 手動組裝（不依賴外部套件）
-          const boundary = '----FormBoundary' + Date.now().toString(16);
-          const CRLF = '\r\n';
+        const uploadText = await uploadRes.text();
+        console.log('Upload response:', uploadRes.status, uploadText.slice(0, 200));
 
-          const header = [
-            `--${boundary}`,
-            `Content-Disposition: form-data; name="file"; filename="image.${ext}"`,
-            `Content-Type: ${mimeType}`,
-            '',
-            '',
-          ].join(CRLF);
-
-          const footer = `${CRLF}--${boundary}--${CRLF}`;
-
-          const headerBuf = Buffer.from(header, 'utf-8');
-          const footerBuf = Buffer.from(footer, 'utf-8');
-          const body = Buffer.concat([headerBuf, buffer, footerBuf]);
-
-          const uploadRes = await fetch(`${KIE_BASE}/api/v1/upload`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${KIE_KEY}`,
-              'Content-Type': `multipart/form-data; boundary=${boundary}`,
-              'Content-Length': body.length,
-            },
-            body,
-          });
-
-          if (uploadRes.ok) {
-            const uploadData = await uploadRes.json();
-            imageUrl = uploadData?.data?.url || uploadData?.url || null;
-            console.log('Upload success, imageUrl:', imageUrl);
-          } else {
-            const t = await uploadRes.text();
-            console.log('Upload failed:', uploadRes.status, t);
-          }
+        if (uploadRes.ok) {
+          const uploadData = JSON.parse(uploadText);
+          imageUrl = uploadData?.data?.url || uploadData?.url || null;
         }
-      } catch (uploadErr) {
-        console.log('Upload error:', uploadErr.message);
+      } catch (e) {
+        console.log('Upload error:', e.message);
       }
 
-      // 若上傳失敗，直接用 base64 data URL
       if (!imageUrl) {
-        console.log('Using base64 data URL directly');
-        imageUrl = dataUrl;
+        return res.status(500).json({ error: '圖片上傳失敗，無法取得圖片 URL。請確認 KIE File Upload API 已啟用。' });
       }
     }
 
-    // 呼叫 nano-banana-edit
+    // 步驟 2: 呼叫 google/nano-banana-edit
+    // 注意：此模型用 image_urls（非 image_input），格式為 URL 陣列
     const payload = {
-      model: 'nano-banana-edit',
+      model: 'google/nano-banana-edit',
       input: {
         prompt,
-        image_input: imageUrl ? [imageUrl] : [],
-        aspect_ratio: 'auto',
-        resolution: '1K',
+        image_urls: imageUrl ? [imageUrl] : [],
         output_format: 'png',
+        image_size: 'auto',
       },
     };
 
-    console.log('Calling KIE model: nano-banana-edit');
+    console.log('Calling google/nano-banana-edit, imageUrl:', imageUrl?.slice(0, 60));
 
     const kieRes = await fetch(`${KIE_BASE}/api/v1/jobs/createTask`, {
       method: 'POST',
@@ -104,7 +93,7 @@ export default async function handler(req, res) {
     });
 
     const data = await kieRes.json();
-    console.log('KIE response code:', data.code, 'msg:', data.msg);
+    console.log('KIE response:', JSON.stringify(data));
 
     if (!kieRes.ok) return res.status(kieRes.status).json({ error: data });
     return res.status(200).json(data);
