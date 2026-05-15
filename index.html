@@ -927,14 +927,14 @@ async function doGenerate() {
 
 async function kieCreateTask(type, mat, note, lightingSuffix = '') {
   const prompt = buildPrompt(type, mat, note, lightingSuffix);
-  const b64 = imgB64.split(',')[1];
   // 呼叫後端 Vercel Function（/api/generate），由後端持有 API Key
+  // imgB64 是完整 data URL，後端會正確處理格式
   const res = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       prompt,
-      image_input: [b64],
+      image_input: [imgB64], // 傳完整 data URL（含 data:image/...;base64, 前綴）
       aspect_ratio: 'auto',
       resolution: '1K',
       output_format: 'png'
