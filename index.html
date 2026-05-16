@@ -977,6 +977,11 @@ async function doGenerate() {
     if (successResults.length === 0) throw new Error('所有圖片生成失敗');
     showResult(successResults);
     addLog(`🎉 完成！成功生成 ${successResults.length}/4 張`, 'lk');
+    // 背景儲存圖片至 localStorage（不阻塞 UI）
+    persistResults(gid, successResults).then(saved => {
+      // 更新顯示中的圖片為 base64（確保下載可用）
+      showResult(saved);
+    });
 
   } catch (err) {
     clearTimers();
@@ -1094,6 +1099,50 @@ function buildPrompt(type, mat, note, lightingSuffix = '') {
   if (lightingSuffix) p += ` ${lightingSuffix}`;
   if (note) p += ` Extra: ${note}.`;
   return p;
+}
+
+// 把圖片 URL 下載並轉為 base64 永久儲存
+async function fetchImageAsBase64(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('fetch failed');
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    console.warn('圖片轉 base64 失敗:', e.message);
+    return url; // 失敗時保留原 URL
+  }
+}
+
+// 永久儲存生成結果（把 URL 轉為 base64 存入 localStorage）
+async function persistResults(gid, results) {
+  try {
+    addLog('💾 正在永久儲存圖片...');
+    const savedResults = await Promise.all(
+      results.map(async r => {
+        const b64 = await fetchImageAsBase64(r.url);
+        return { ...r, url: b64 };
+      })
+    );
+    // 更新 localStorage 中的生成記錄
+    const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
+    const idx = all.findIndex(g => g.id === gid);
+    if (idx >= 0) {
+      all[idx].imgOut = savedResults[0]?.url || null;
+      all[idx].allImgs = savedResults.map(r => ({ label: r.label, url: r.url }));
+      localStorage.setItem('cai_gens', JSON.stringify(all));
+    }
+    addLog('✅ 圖片已永久儲存，歷史記錄可隨時下載', 'lk');
+    return savedResults;
+  } catch (e) {
+    console.warn('永久儲存失敗:', e.message);
+    return results;
+  }
 }
 
 function showResult(results) {
@@ -1337,18 +1386,21 @@ function processPending() {
 //  HISTORY
 // ================================================================
 function histCard(g) {
-  const sm = { success: '成功（3張）', failed: '失敗', pending: '處理中' };
+  const sm = { success: '成功（4張）', failed: '失敗', pending: '處理中' };
   const imgH = g.imgOut
-    ? `<img src="${g.imgOut}" alt="效果圖" onerror="this.parentElement.innerHTML='<div class=hc-ph>🪟</div>'">`
+    ? `<img src="${g.imgOut}" alt="效果圖" style="cursor:pointer" onclick="viewHistory('${g.id}')" onerror="this.parentElement.innerHTML='<div class=hc-ph>🪟</div>'">`
     : `<div class="hc-ph">🪟</div>`;
   return `<div class="hc">
     ${imgH}
     <div class="hc-info">
       <h4>${ctName(g.type) || g.type || '未知'} · ${g.color || ''}</h4>
-      <p>${g.mat ? g.mat + ' · ' : ''}☀️🌇🌙 三種光線</p>
+      <p>${g.mat ? g.mat + ' · ' : ''}☀️🌇🌙🔍 四種效果</p>
       <span class="sbadge ${g.status}">${sm[g.status] || g.status}</span>
     </div>
-    ${g.imgOut && g.status === 'success' ? `<div class="hc-acts"><button class="btn bs bsm" onclick="dlFromHistory('${g.id}')">下載</button></div>` : ''}
+    ${g.status === 'success' ? `<div class="hc-acts" style="flex-wrap:wrap;gap:6px">
+      <button class="btn bs bsm" onclick="viewHistory('${g.id}')" style="flex:1">👁 查看</button>
+      <button class="btn bp bsm" onclick="dlAllFromHistory('${g.id}')" style="flex:1">⬇ 下載</button>
+    </div>` : ''}
   </div>`;
 }
 function renderHistory() {
@@ -1362,12 +1414,67 @@ function renderHistory() {
   el.className = 'hist-grid';
   el.innerHTML = gs.map(histCard).join('');
 }
-function dlFromHistory(id) {
+function viewHistory(id) {
   try {
-    const g = JSON.parse(localStorage.getItem('cai_gens') || '[]').find(g => g.id === id);
-    if (g?.imgOut) { genImgUrl = g.imgOut; dlResult(); }
-  } catch {}
+    const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
+    const g = all.find(x => x.id === id);
+    if (!g) return;
+    const imgs = g.allImgs || (g.imgOut ? [{ label: '效果圖', url: g.imgOut }] : []);
+    if (!imgs.length) { alert('此記錄沒有已儲存的圖片\n\n提示：只有最新版本生成的記錄才支援歷史下載功能'); return; }
+    const existing = document.getElementById('hist-modal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'hist-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(44,37,32,.6);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+    modal.onclick = e => { if(e.target===modal) modal.remove(); };
+    const typeName = ctName(g.type) || g.type || '未知';
+    const imgsHtml = imgs.map(r => {
+      const isSwatch = r.label && r.label.includes('特寫');
+      return '<div style="text-align:center">' +
+        '<div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:7px">' + r.label + '</div>' +
+        (isSwatch ? '<div style="font-size:11px;color:#C05A00;background:#FFF5EE;border-radius:8px;padding:4px 8px;margin-bottom:6px">📋 可拿給窗簾店</div>' : '') +
+        '<img src="' + r.url + '" style="width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.1);display:block;margin-bottom:8px' + (isSwatch ? ';border:2px solid #FFCBA4' : '') + '">' +
+        '<button class="btn bs bsm" style="width:100%" onclick="dlSingle('' + r.url + '','' + r.label + '')">⬇ 下載此張</button>' +
+        '</div>';
+    }).join('');
+    modal.innerHTML = '<div style="background:#fff;border-radius:24px;padding:26px;max-width:900px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,.2)">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">' +
+      '<div><h3 style="font-size:17px;font-weight:700;margin-bottom:3px">' + typeName + ' · ' + (g.color || '') + '</h3>' +
+      '<p style="font-size:12px;color:var(--tx2)">' + (g.mat || '') + ' · ' + new Date(g.ts).toLocaleDateString('zh-TW') + '</p></div>' +
+      '<button onclick="document.getElementById('hist-modal').remove()" style="background:var(--bd);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:16px">×</button></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px">' + imgsHtml + '</div>' +
+      '<div style="text-align:center"><button class="btn bp" onclick="dlAllFromHistory('' + id + '')">⬇ 下載全部 ' + imgs.length + ' 張</button></div>' +
+      '</div>';
+    document.body.appendChild(modal);
+  } catch(e) { console.error(e); alert('載入失敗：' + e.message); }
 }
+
+function dlAllFromHistory(id) {
+  try {
+    const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
+    const g = all.find(x => x.id === id);
+    if (!g) return;
+    const imgs = g.allImgs || (g.imgOut ? [{ label: '效果圖', url: g.imgOut }] : []);
+    if (!imgs.length) { alert('此記錄沒有已儲存的圖片'); return; }
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      const w = window.open();
+      const html = imgs.map(r => '<div style="margin-bottom:24px;text-align:center"><p style="color:#fff;font-size:13px;margin-bottom:8px">' + r.label + '</p><img src="' + r.url + '" style="max-width:100%;border-radius:8px"></div>').join('');
+      w.document.write('<html><body style="margin:0;background:#111;padding:20px">' + html + '<p style="color:#fff;text-align:center;font-size:13px;margin-top:16px">長按各圖片 → 加入相片</p></body></html>');
+    } else {
+      imgs.forEach((r, i) => {
+        setTimeout(() => {
+          const a = document.createElement('a');
+          a.href = r.url;
+          a.download = 'CurtainAI_' + (r.label || '').replace(/[^a-zA-Z0-9一-龥]/g, '_') + '_' + Date.now() + '.png';
+          a.click();
+        }, i * 700);
+      });
+    }
+  } catch(e) { alert('下載失敗：' + e.message); }
+}
+
+function dlFromHistory(id) { dlAllFromHistory(id); }
 
 // ================================================================
 //  MODAL
