@@ -758,6 +758,8 @@ let pollTimer = null;
 let progTimer = null;
 let deferredPrompt = null;
 let currentResults = []; // 儲存最新一次生成的所有圖片
+let currentGid = null;   // 目前生成的 ID
+let pointsRefunded = false; // 防止重複退點
 
 // ================================================================
 //  STORAGE
@@ -772,6 +774,9 @@ const LS = {
     return LS.users().find(u => u.id === id) || null;
   },
   saveUser: user => {
+    // 防止點數異常（最多 9999 點）
+    if (user.points > 9999) user.points = 9999;
+    if (user.points < 0) user.points = 0;
     const us = LS.users();
     const i = us.findIndex(u => u.id === user.id);
     if (i >= 0) us[i] = user;
@@ -953,8 +958,10 @@ async function doGenerate() {
   // Deduct points
   u.points -= 30; LS.saveUser(u); updateNav();
   document.getElementById('cur-pts').textContent = u.points;
+  pointsRefunded = false; // 重置退點標記
 
   const gid  = uid();
+  currentGid = gid;
   const type = document.getElementById('c-type').value;
   const mat  = document.getElementById('c-mat').value;
   const note = document.getElementById('extra-note').value;
@@ -968,9 +975,9 @@ async function doGenerate() {
   addLog('📤 正在送出 4 個任務（白天、下午、晚上 + 材質特寫）至 KIE AI...');
 
   const lightingScenes = [
-    { label: '☀️ 白天', suffix: 'Bright natural daylight, clear sunny day, warm sunlight streaming through windows, bright airy atmosphere.' },
-    { label: '🌇 下午', suffix: 'Warm golden afternoon light, soft sunset glow, gentle orange-tinted natural light through windows, cozy ambiance.' },
-    { label: '🌙 晚上', suffix: 'Evening indoor scene, ceiling lights and warm floor lamps turned on, cozy artificial lighting, dark outside windows, intimate atmosphere.' },
+    { label: '☀️ 白天', suffix: 'Daytime, bright natural sunlight.' },
+    { label: '🌇 下午', suffix: 'Afternoon, warm golden light.' },
+    { label: '🌙 晚上', suffix: 'Evening, indoor lighting on, cozy ambiance.' },
     { label: '🔍 材質特寫', isSwatch: true, suffix: '' }
   ];
 
@@ -1004,21 +1011,31 @@ async function doGenerate() {
     LS.updateGen(gid, { status: 'success', imgOut: successResults[0]?.url || null, imgCount: successResults.length });
     // 背景儲存圖片至 localStorage（不阻塞 UI）
     persistResults(gid, successResults).then(saved => {
-      showResult(saved); // 更新顯示中的圖片為 base64
+      // 只有在仍是同一次生成時才更新顯示
+      if (currentGid === gid) {
+        showResult(saved); // 更新顯示中的圖片為 base64（現在是永久 base64）
+      }
     });
 
   } catch (err) {
     clearTimers();
     addLog('❌ 錯誤：' + err.message, 'le');
-    const u2 = LS.curUser(); u2.points += 30; LS.saveUser(u2); updateNav();
-    LS.updateGen(gid, { status: 'failed' });
-    document.getElementById('prog-txt').textContent = '生成失敗，點數已退回';
-    document.getElementById('prog-sub').textContent = err.message.slice(0, 60);
-    setTimeout(() => {
-      document.getElementById('prog-sec').style.display = 'none';
-      document.getElementById('create-form').style.display = '';
-      document.getElementById('cur-pts').textContent = u2.points;
-    }, 3500);
+    // 防止重複退點
+    if (!pointsRefunded) {
+      pointsRefunded = true;
+      const u2 = LS.curUser();
+      u2.points += 30;
+      LS.saveUser(u2);
+      updateNav();
+      LS.updateGen(gid, { status: 'failed' });
+      document.getElementById('prog-txt').textContent = '生成失敗，點數已退回';
+      document.getElementById('prog-sub').textContent = err.message.slice(0, 60);
+      setTimeout(() => {
+        document.getElementById('prog-sec').style.display = 'none';
+        document.getElementById('create-form').style.display = '';
+        document.getElementById('cur-pts').textContent = u2.points;
+      }, 3500);
+    }
   }
 }
 
@@ -1051,13 +1068,9 @@ async function kieCreateSwatch(type, mat) {
   const colorHex = selColor ? selColor.h : '#C4A882';
 
   // 特寫 prompt：專注在布料質感細節
-  const prompt = `Professional close-up product photography of ${type} fabric swatch. ` +
-    `Material: ${matName}. Color: ${colorName} (${colorHex}), Morandi palette tone. ` +
-    `Show realistic fabric texture, weave pattern, and surface detail clearly. ` +
-    `Clean white or light neutral background. Studio lighting, macro photography, ` +
-    `high resolution, sharp focus on fabric texture. ` +
-    `No curtain rod or room visible, fabric only. ` +
-    `Label style: elegant product catalog photo for ${typeName}.`;
+  const prompt = `Close-up product photo of ${typeName} fabric. ` +
+    `Color: ${colorName} (${colorHex}). Material: ${matName}. ` +
+    `Show fabric texture clearly. White background. Studio lighting.`;
 
   const res = await fetch('/api/generate', {
     method: 'POST',
@@ -1112,16 +1125,17 @@ async function kiePollTask(taskId, gid, label = '') {
 }
 
 function buildPrompt(type, mat, note, lightingSuffix = '') {
-  // type 是英文精確描述（來自 option value），直接用於 AI prompt
-  let p = `Keep the original room layout, furniture, walls, floors and all elements completely identical. `;
-  p += `Only add or replace the window treatment with a ${type}. `;
-  p += `The curtain color must be ${selColor.n} (hex ${selColor.h}), a Morandi palette tone, subtle and elegant. `;
-  if (mat) p += `Fabric material: ${mat} with realistic texture. `;
-  p += `Do not change anything else in the room. `;
-  p += `Photorealistic interior design render, professional photography style, sharp details.`;
-  if (lightingSuffix) p += ` ${lightingSuffix}`;
-  if (note) p += ` Extra: ${note}.`;
-  return p;
+  const colorName = selColor ? selColor.n : 'neutral';
+  const colorHex  = selColor ? selColor.h : '#C4A882';
+  // 簡潔 prompt，減少觸發 Gemini 安全過濾的機率
+  let p = `Interior design photo. Add ${type} to the windows. `;
+  p += `Window treatment color: ${colorName} (${colorHex}). `;
+  if (mat) p += `Material: ${mat}. `;
+  p += `Keep all existing furniture and room elements unchanged. `;
+  p += `${lightingSuffix} `;
+  p += `Realistic interior photography.`;
+  if (note) p += ` ${note}.`;
+  return p.trim();
 }
 
 // 把圖片 URL 下載並轉為 base64 永久儲存
