@@ -293,7 +293,23 @@ textarea{resize:vertical;min-height:76px}
   .hero{padding:48px 16px 36px}
   .hero h1{font-size:26px;letter-spacing:-1px}
   .hero p{font-size:14px}
-}</style>
+}
+/* ---- LIGHTBOX ---- */
+.lb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:400;align-items:center;justify-content:center;padding:16px;flex-direction:column}
+.lb-overlay.open{display:flex}
+.lb-img{max-width:100%;max-height:80vh;border-radius:12px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.lb-label{color:#fff;font-size:13px;margin-top:14px;font-weight:600;letter-spacing:.5px}
+.lb-hint{color:#aaa;font-size:12px;margin-top:6px}
+.lb-btns{display:flex;gap:10px;margin-top:16px}
+.lb-close{position:absolute;top:16px;right:18px;color:#fff;font-size:28px;cursor:pointer;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center}
+
+/* ---- LIGHTBOX ---- */
+.lightbox-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}
+.lightbox-overlay.open{display:flex}
+.lightbox-overlay img{max-width:100%;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.5);cursor:default}
+.lightbox-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:40px;height:40px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.lightbox-label{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:#fff;font-size:13px;background:rgba(0,0,0,.5);padding:6px 16px;border-radius:20px}
+</style>
 </head>
 <body>
 
@@ -788,7 +804,7 @@ function go(page) {
   if (el) el.classList.add('active');
   window.scrollTo(0, 0);
   if (page === 'dashboard') renderDashboard();
-  if (page === 'history')   renderHistory();
+  if (page === 'history')   rdHist();
   if (page === 'create')    rdCreate();
   if (page === 'pay-ok')    processPending();
 }
@@ -860,9 +876,9 @@ function renderDashboard() {
   const recent = gs.slice(0, 3);
   const el = document.getElementById('d-recent');
   if (!recent.length) {
-    el.innerHTML = `<div class="empty-s"><div class="ei">🪟</div><p>還沒有生成記錄，開始您的第一張設計吧！</p></div>`;
+    el.innerHTML = '<div class="empty-s"><div class="ei">🪟</div><p>還沒有生成記錄，開始您的第一張設計吧！</p></div>';
   } else {
-    el.innerHTML = `<div class="hist-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">${recent.map(histCard).join('')}</div>`;
+    el.innerHTML = '<div class="hist-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">' + recent.map(histCard).join('') + '</div>';
   }
 }
 
@@ -978,10 +994,12 @@ async function doGenerate() {
     if (successResults.length === 0) throw new Error('所有圖片生成失敗');
     showResult(successResults);
     addLog(`🎉 完成！成功生成 ${successResults.length}/4 張`, 'lk');
+    // 立即把 status 設為 success
+    // 設定成功狀態（allImgs 會在 persistResults 後更新）
+    LS.updateGen(gid, { status: 'success', imgOut: successResults[0]?.url || null, imgCount: successResults.length });
     // 背景儲存圖片至 localStorage（不阻塞 UI）
     persistResults(gid, successResults).then(saved => {
-      // 更新顯示中的圖片為 base64（確保下載可用）
-      showResult(saved);
+      showResult(saved); // 更新顯示中的圖片為 base64
     });
 
   } catch (err) {
@@ -1072,7 +1090,7 @@ async function kiePollTask(taskId, gid, label = '') {
           let urls = []; try { urls = JSON.parse(dd.resultJson || '{}').resultUrls || []; } catch {}
           if (!urls.length) { reject(new Error('生成成功但無圖片 URL')); return; }
           addLog(`🎉 ${label} 生成成功！`, 'lk');
-          LS.updateGen(gid, { status: 'success', imgOut: urls[0] });
+          // 不在此處更新主記錄，由 doGenerate 統一更新所有結果
           resolve({ url: urls[0], label });
         } else if (st === 'fail') {
           clearTimers();
@@ -1148,7 +1166,7 @@ async function persistResults(gid, results) {
     if (idx >= 0) {
       all[idx].imgOut = savedResults[0]?.url || null;
       all[idx].imgCount = savedResults.length;
-      // allImgs 改為輕量版（只存 label，URL 從獨立 key 讀取）
+      all[idx].status = 'success'; // 確保歷史記錄顯示成功
       all[idx].allImgs = savedResults.map((r, i) => ({ label: r.label, idx: i, url: r.url }));
       localStorage.setItem('cai_gens', JSON.stringify(all));
     }
@@ -1176,7 +1194,8 @@ function showResult(results) {
       <div style="font-size:13px;font-weight:700;color:var(--tx2);margin-bottom:8px;letter-spacing:.5px">${r.label}</div>
       ${isSwatch ? `<div style="font-size:11px;color:var(--ac2);margin-bottom:8px;background:var(--ac-l);border-radius:8px;padding:5px 10px">📋 可截圖此圖拿給窗簾店，說明您選擇的類型與材質</div>` : ''}
       <img src="${r.url}" alt="${r.label}"
-        style="width:100%;border-radius:${isSwatch ? '12px' : '16px'};box-shadow:var(--shl);display:block;margin-bottom:4px${isSwatch ? ';border:2px solid var(--ac)' : ''}"
+        style="width:100%;border-radius:${isSwatch ? '12px' : '16px'};box-shadow:var(--shl);display:block;margin-bottom:4px${isSwatch ? ';border:2px solid var(--ac)' : ''};cursor:zoom-in"
+        onclick="openLightbox('${r.url}','${r.label}')"
         onerror="this.src='${fallbackSVG()}'">
       ${isSwatch ? `<div style="font-size:11px;color:var(--tx2);margin-bottom:6px">類型：${ctName(document.getElementById('c-type')?.value)} ／ 材質：${document.getElementById('c-mat')?.value || '－'} ／ 顏色：${selColor?.n || '－'}</div>` : ''}
       <button class="btn bs bsm" style="margin-top:6px;width:100%" onclick="dlSingle('${r.url}','${r.label}')">⬇ 下載 ${r.label}</button>
@@ -1234,261 +1253,168 @@ function fallbackSVG() {
 // Download / Share
 function dlSingle(url, label) {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const safeName = 'CurtainAI_' + (label || '').replace(/[^a-zA-Z0-9一-龥]/g, '_') + '_' + Date.now() + '.png';
+
   if (isIOS) {
-    // iOS：開新頁讓用戶長按儲存
     const w = window.open();
-    w.document.write('<html><body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;padding:20px">' +
-      '<img src="' + url + '" style="max-width:100%;border-radius:8px">' +
-      '<p style="color:#fff;font-family:sans-serif;margin-top:14px;font-size:13px">長按圖片 → 加入相片（' + label + '）</p>' +
-      '</body></html>');
-  } else {
-    // 直接觸發下載到電腦
-    fetch(url)
-      .then(r => r.blob())
-      .then(blob => {
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = 'CurtainAI_' + (label || '').replace(/[^\w一-龥]/g, '_') + '_' + Date.now() + '.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-      })
-      .catch(() => {
-        // fetch 失敗時備援：直接用 a 標籤
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'CurtainAI_' + Date.now() + '.png';
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      });
+    w.document.write('<html><body style="margin:0;background:#111;padding:20px;text-align:center">' +
+      '<img src="' + url + '" style="max-width:100%;border-radius:8px"><br>' +
+      '<p style="color:#fff;font-size:13px;margin-top:12px">長按圖片 → 加入相片（' + (label||'') + '）</p></body></html>');
+    return;
   }
+
+  // base64 data URL → 直接下載
+  if (url.startsWith('data:')) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = safeName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return;
+  }
+
+  // 外部 URL → fetch 轉 blob 下載
+  fetch(url)
+    .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.blob(); })
+    .then(blob => {
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = safeName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+    })
+    .catch(() => {
+      // 備援：直接開新分頁
+      window.open(url, '_blank');
+    });
 }
+
+
 function dlAllResult() {
-  // 從 currentResults 全域變數取得所有圖片（確保是 4 張）
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   if (!currentResults || currentResults.length === 0) {
     alert('沒有可下載的圖片');
     return;
   }
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   if (isIOS) {
     const w = window.open();
-    const imgsHtml = currentResults.map(r =>
+    const imgs = currentResults.map(r =>
       '<div style="margin-bottom:20px;text-align:center">' +
       '<p style="color:#aaa;font-size:12px;margin-bottom:6px">' + r.label + '</p>' +
-      '<img src="' + r.url + '" style="max-width:100%;border-radius:8px">' +
-      '</div>'
+      '<img src="' + r.url + '" style="max-width:100%;border-radius:8px"></div>'
     ).join('');
-    w.document.write('<html><body style="margin:0;background:#111;padding:20px">' + imgsHtml +
+    w.document.write('<html><body style="margin:0;background:#111;padding:20px">' + imgs +
       '<p style="color:#fff;text-align:center;font-size:13px;margin-top:16px">長按各圖片 → 加入相片</p></body></html>');
   } else {
+    // 逐張下載，每張間隔 1 秒
     currentResults.forEach((r, i) => {
-      setTimeout(() => { dlSingle(r.url, r.label); }, i * 800);
+      setTimeout(() => dlSingle(r.url, r.label), i * 1000);
     });
   }
 }
 function dlResult() { dlAllResult(); }
-async function shareResult() {
-  if (!genImgUrl) return;
-  if (navigator.share) {
-    try { await navigator.share({ title: 'CurtainAI 窗簾設計', text: '用 AI 設計的窗簾效果圖！', url: location.href }); return; } catch {}
-  }
-  dlResult();
-}
-
-// ================================================================
-//  ECPAY
-// ================================================================
-async function calcCheckMac(params) {
-  const sorted = Object.keys(params).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-  let raw = 'HashKey=' + CFG.epKey + '&' + sorted.map(k => k + '=' + params[k]).join('&') + '&HashIV=' + CFG.epIV;
-  // ECPay URLEncode spec
-  raw = encodeURIComponent(raw)
-    .replace(/%20/g, '+').replace(/!/g, '%21').replace(/'/g, '%27')
-    .replace(/\(/g, '%28').replace(/\)/g, '%29').replace(/\*/g, '%2A').replace(/~/g, '%7E')
-    .toLowerCase();
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
-}
-
-async function openPayModal(pts, amt, item) {
-  const u = LS.curUser(); if (!u) { go('auth'); return; }
-
-  // Show modal loading
-  document.getElementById('ep-modal-bg').classList.add('open');
-  document.getElementById('ep-modal-title').textContent = '💳 綠界付款';
-  document.getElementById('ep-modal-body').innerHTML = `
-    <div style="text-align:center;padding:24px;color:var(--tx2)">
-      <div style="width:28px;height:28px;border:3px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px"></div>
-      正在建立訂單...
-    </div>`;
-
-  try {
-    const now = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    const tradeDate = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    const tradeNo   = 'CAI' + String(Date.now()).slice(-14); // max 20 chars
-
-    // Build return URL back to this file
-    const baseUrl = 'https://curtainai-wine.vercel.app';
-
-    const params = {
-      MerchantID:       CFG.epMid,
-      MerchantTradeNo:  tradeNo,
-      MerchantTradeDate: tradeDate,
-      PaymentType:      'aio',
-      TotalAmount:      String(amt),
-      TradeDesc:        'CurtainAI%E9%BB%9E%E6%95%B8',
-      ItemName:         item,
-      ReturnURL:        'https://hookb.in/curtainai',
-      ClientBackURL:    baseUrl + '/?pay=ok&pts=' + pts,
-      ChoosePayment:    'Credit',
-      EncryptType:      '1',
-    };
-
-    const cmv = await calcCheckMac(params);
-    const allParams = { ...params, CheckMacValue: cmv };
-
-    // Save pending
-    localStorage.setItem('cai_pending', JSON.stringify({ pts, amt, item, userId: u.id, tradeNo }));
-
-    // Fill ECPay form
-    const form = document.getElementById('ep-form');
-    form.innerHTML = '';
-    form.action = CFG.epUrl;
-    Object.entries(allParams).forEach(([k, v]) => {
-      const inp = document.createElement('input');
-      inp.type = 'hidden'; inp.name = k; inp.value = v;
-      form.appendChild(inp);
-    });
-
-    // Update modal content
-    document.getElementById('ep-modal-body').innerHTML = `
-      <div class="al al-inf" style="font-size:13px">
-        ✅ 訂單建立成功！點擊下方按鈕前往綠界沙盒付款頁面（會在新頁籤開啟）。
-      </div>
-      <table class="ep-table">
-        <tr><th>商品</th><td class="hl">${item}</td></tr>
-        <tr><th>金額</th><td class="hl">TWD $${amt}</td></tr>
-        <tr><th>點數</th><td class="hl">+${pts} 點</td></tr>
-        <tr><th>訂單編號</th><td>${tradeNo}</td></tr>
-      </table>
-      <button class="btn bp bfull" style="font-size:15px;padding:14px" onclick="submitECPay()">
-        💳 前往綠界付款頁面
-      </button>
-      <div class="al al-warn" style="margin-top:14px;font-size:13px">
-        💡 付款完成後，綠界將自動跳回本網站並入帳，無需任何手動操作。
-      </div>
-      <div style="text-align:center;margin-top:12px">
-        <button class="btn bs bsm" onclick="document.getElementById('ep-modal-bg').classList.remove('open')">取消</button>
-      </div>`;
-  } catch (e) {
-    document.getElementById('ep-modal-body').innerHTML = `<div class="al al-err">❌ 建立訂單失敗：${e.message}</div>`;
-  }
-}
-
-function submitECPay() {
-  const form = document.getElementById('ep-form');
-  form.target = '_blank';
-  form.submit();
-}
-
-function confirmPayment(pts) {
-  const raw = localStorage.getItem('cai_pending');
-  let addPts = pts;
-  if (raw) { try { addPts = JSON.parse(raw).pts || pts; } catch {} }
-  const u = LS.curUser();
-  if (u) {
-    u.points += addPts; LS.saveUser(u); updateNav();
-    document.getElementById('pay-ok-msg').textContent = `已成功加入 ${addPts} 點！目前共有 ${u.points} 點。`;
-  }
-  localStorage.removeItem('cai_pending');
-  document.getElementById('ep-modal-bg').classList.remove('open');
-  go('pay-ok');
-}
-
-function processPending() {
-  // Called when returning from ECPay via URL param (?pay=ok)
-  const params = new URLSearchParams(location.search);
-  if (params.get('pay') === 'ok') {
-    const raw = localStorage.getItem('cai_pending');
-    if (raw) {
-      try {
-        const p = JSON.parse(raw);
-        const u = LS.curUser();
-        if (u && u.id === p.userId) {
-          u.points += p.pts; LS.saveUser(u); updateNav();
-          document.getElementById('pay-ok-msg').textContent =
-            `🎉 已成功加入 ${p.pts} 點！目前共有 ${u.points} 點，可生成 ${Math.floor(u.points/10)} 張效果圖。`;
-        }
-        localStorage.removeItem('cai_pending');
-      } catch {}
-    }
-    // Clean URL so refresh won't re-trigger
-    history.replaceState({}, '', location.pathname);
-  }
-}
 
 // ================================================================
 //  HISTORY
 // ================================================================
 function histCard(g) {
   const sm = { success: '成功（4張）', failed: '失敗', pending: '處理中' };
-  const imgH = g.imgOut
-    ? `<img src="${g.imgOut}" alt="效果圖" style="cursor:pointer" onclick="viewHistory('${g.id}')" onerror="this.parentElement.innerHTML='<div class=hc-ph>🪟</div>'">`
-    : `<div class="hc-ph">🪟</div>`;
-  return `<div class="hc">
-    ${imgH}
-    <div class="hc-info">
-      <h4>${ctName(g.type) || g.type || '未知'} · ${g.color || ''}</h4>
-      <p>${g.mat ? g.mat + ' · ' : ''}☀️🌇🌙🔍 四種效果</p>
-      <span class="sbadge ${g.status}">${sm[g.status] || g.status}</span>
-    </div>
-    ${g.status === 'success' ? `<div class="hc-acts" style="flex-wrap:wrap;gap:6px">
-      <button class="btn bs bsm" onclick="viewHistory('${g.id}')" style="flex:1">👁 查看</button>
-      <button class="btn bp bsm" onclick="dlAllFromHistory('${g.id}')" style="flex:1">⬇ 下載</button>
-    </div>` : ''}
-  </div>`;
+  const card = document.createElement('div');
+  card.className = 'hc';
+
+  // Thumbnail
+  if (g.imgOut) {
+    const img = document.createElement('img');
+    img.src = g.imgOut;
+    img.alt = 'thumb';
+    img.style.cssText = 'width:100%;height:168px;object-fit:cover;display:block;cursor:zoom-in';
+    img.onclick = function() { openLightbox(g.imgOut, ctName(g.type) || g.type || ''); };
+    img.onerror = function() { this.parentElement.innerHTML = '<div class="hc-ph">🪟</div>'; };
+    card.appendChild(img);
+  } else {
+    card.innerHTML = '<div class="hc-ph">🪟</div>';
+  }
+
+  // Info
+  const info = document.createElement('div');
+  info.className = 'hc-info';
+  info.innerHTML =
+    '<h4>' + (ctName(g.type) || g.type || '未知') + ' · ' + (g.color || '') + '</h4>' +
+    '<p>' + (g.mat ? g.mat + ' · ' : '') + '☀️🌇🌙🔍 四種效果</p>' +
+    '<span class="sbadge ' + g.status + '">' + (sm[g.status] || g.status) + '</span>';
+  card.appendChild(info);
+
+  // Buttons (only if success)
+  if (g.status === 'success') {
+    const acts = document.createElement('div');
+    acts.className = 'hca';
+    acts.style.cssText = 'flex-wrap:wrap;gap:6px';
+
+    const viewBtn = document.createElement('button');
+    viewBtn.className = 'btn bs bsm';
+    viewBtn.style.flex = '1';
+    viewBtn.textContent = '👁 查看';
+    viewBtn.onclick = function() { viewHistory(g.id); };
+    acts.appendChild(viewBtn);
+
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'btn bp bsm';
+    dlBtn.style.flex = '1';
+    dlBtn.textContent = '⬇ 下載';
+    dlBtn.onclick = function() { dlAllFromHistory(g.id); };
+    acts.appendChild(dlBtn);
+
+    card.appendChild(acts);
+  }
+
+  return card.outerHTML;
 }
-function renderHistory() {
+
+function rdHist() {
   const u = LS.curUser(); if (!u) return;
   const gs = LS.gens(u.id);
   const el = document.getElementById('hist-grid');
   if (!gs.length) {
-    el.innerHTML = `<div class="empty-s"><div class="ei">🪟</div><p>還沒有生成記錄</p><br><button class="btn bp bsm" onclick="go('create')">開始設計</button></div>`;
+    el.innerHTML = '<div class="empty-s"><div class="ei">🪟</div><p>還沒有生成記錄</p><br><button class="btn bp bsm" onclick="go(\'create\')">開始設計</button></div>';
     return;
   }
   el.className = 'hist-grid';
   el.innerHTML = gs.map(histCard).join('');
 }
+
+function getHistImgs(id) {
+  const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
+  const g = all.find(function(x) { return x.id === id; });
+  if (!g) return [];
+  if (g.allImgs && g.allImgs.length > 0) {
+    return g.allImgs.map(function(item, i) {
+      try {
+        const stored = localStorage.getItem('cai_img_' + id + '_' + i);
+        if (stored) { const p = JSON.parse(stored); return { label: p.label, url: p.url }; }
+      } catch(e) {}
+      return { label: item.label, url: item.url };
+    });
+  }
+  if (g.imgOut) return [{ label: '效果圖', url: g.imgOut }];
+  return [];
+}
+
 function viewHistory(id) {
   try {
+    const imgs = getHistImgs(id);
     const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
-    const g = all.find(x => x.id === id);
+    const g = all.find(function(x) { return x.id === id; });
     if (!g) return;
-    // 嘗試從獨立 key 讀取每張圖片（新版儲存格式）
-    let imgs = [];
-    if (g.allImgs && g.allImgs.length > 0) {
-      imgs = g.allImgs.map((item, i) => {
-        try {
-          const stored = localStorage.getItem('cai_img_' + id + '_' + i);
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            return { label: parsed.label, url: parsed.url };
-          }
-        } catch(e) {}
-        return { label: item.label, url: item.url }; // 備援：用原本儲存的 URL
-      });
-    } else if (g.imgOut) {
-      imgs = [{ label: '效果圖', url: g.imgOut }];
-    }
+
     if (!imgs.length) {
       alert('此記錄沒有已儲存的圖片\n提示：只有最新版本生成的記錄才支援歷史下載功能');
       return;
     }
+
     const existing = document.getElementById('hist-modal');
     if (existing) existing.remove();
 
@@ -1501,15 +1427,15 @@ function viewHistory(id) {
     box.style.cssText = 'background:#fff;border-radius:24px;padding:26px;max-width:900px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 12px 48px rgba(0,0,0,.2)';
 
     // Header
-    const typeName = ctName(g.type) || g.type || '未知';
     const hdr = document.createElement('div');
     hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:18px';
-    hdr.innerHTML = '<div><h3 style="font-size:17px;font-weight:700;margin-bottom:3px">' + typeName + ' · ' + (g.color || '') + '</h3>' +
-      '<p style="font-size:12px;color:var(--tx2)">' + (g.mat || '') + ' · ' + new Date(g.ts).toLocaleDateString('zh-TW') + '</p></div>';
+    const hdrInfo = document.createElement('div');
+    hdrInfo.innerHTML = '<h3 style="font-size:17px;font-weight:700;margin-bottom:3px">' + (ctName(g.type) || g.type || '未知') + ' · ' + (g.color || '') + '</h3><p style="font-size:12px;color:var(--tx2)">' + (g.mat || '') + ' · ' + new Date(g.ts).toLocaleDateString('zh-TW') + '</p>';
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '×';
-    closeBtn.style.cssText = 'background:var(--bd);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:18px';
+    closeBtn.style.cssText = 'background:var(--bd);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:18px;flex-shrink:0';
     closeBtn.onclick = function() { overlay.remove(); };
+    hdr.appendChild(hdrInfo);
     hdr.appendChild(closeBtn);
     box.appendChild(hdr);
 
@@ -1520,7 +1446,7 @@ function viewHistory(id) {
     imgs.forEach(function(r) {
       const isSwatch = r.label && r.label.includes('特寫');
       const card = document.createElement('div');
-      card.style.cssText = 'text-align:center';
+      card.style.textAlign = 'center';
 
       const lbl = document.createElement('div');
       lbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:7px';
@@ -1536,14 +1462,16 @@ function viewHistory(id) {
 
       const img = document.createElement('img');
       img.src = r.url;
-      img.style.cssText = 'width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.1);display:block;margin-bottom:8px' + (isSwatch ? ';border:2px solid #FFCBA4' : '');
+      img.style.cssText = 'width:100%;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.1);display:block;margin-bottom:8px;cursor:zoom-in' + (isSwatch ? ';border:2px solid #FFCBA4' : '');
+      const rUrl = r.url, rLabel = r.label;
+      img.onclick = function() { openLightbox(rUrl, rLabel); };
       card.appendChild(img);
 
       const dlBtn = document.createElement('button');
       dlBtn.className = 'btn bs bsm';
       dlBtn.style.width = '100%';
       dlBtn.textContent = '⬇ 下載此張';
-      dlBtn.onclick = function() { dlSingle(r.url, r.label); };
+      dlBtn.onclick = function() { dlSingle(rUrl, rLabel); };
       card.appendChild(dlBtn);
 
       grid.appendChild(card);
@@ -1568,92 +1496,55 @@ function viewHistory(id) {
   }
 }
 
-
 function dlAllFromHistory(id) {
-  try {
-    const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
-    const g = all.find(x => x.id === id);
-    if (!g) return;
-    const imgs = g.allImgs || (g.imgOut ? [{ label: '效果圖', url: g.imgOut }] : []);
-    if (!imgs.length) { alert('此記錄沒有已儲存的圖片'); return; }
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      const w = window.open();
-      const html = imgs.map(r => '<div style="margin-bottom:24px;text-align:center"><p style="color:#fff;font-size:13px;margin-bottom:8px">' + r.label + '</p><img src="' + r.url + '" style="max-width:100%;border-radius:8px"></div>').join('');
-      w.document.write('<html><body style="margin:0;background:#111;padding:20px">' + html + '<p style="color:#fff;text-align:center;font-size:13px;margin-top:16px">長按各圖片 → 加入相片</p></body></html>');
-    } else {
-      imgs.forEach((r, i) => {
-        setTimeout(() => {
-          const a = document.createElement('a');
-          a.href = r.url;
-          a.download = 'CurtainAI_' + (r.label || '').replace(/[^a-zA-Z0-9一-龥]/g, '_') + '_' + Date.now() + '.png';
-          a.click();
-        }, i * 700);
-      });
-    }
-  } catch(e) { alert('下載失敗：' + e.message); }
-}
-
-function dlFromHistory(id) { dlAllFromHistory(id); }
-
-// ================================================================
-//  MODAL
-// ================================================================
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-// ================================================================
-//  PWA
-// ================================================================
-// Inline manifest
-const manifest = {
-  name: 'CurtainAI — AI 窗簾設計',
-  short_name: 'CurtainAI',
-  description: '用 AI 為您的空間設計完美窗簾',
-  start_url: './',
-  display: 'standalone',
-  background_color: '#F5F2EE',
-  theme_color: '#8FA3B1',
-  icons: [
-    { src: "data:image/svg+xml;base64," + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="#8FA3B1"/><text y="140" x="30" font-size="120">🪟</text></svg>'), sizes: '192x192', type: 'image/svg+xml' },
-    { src: "data:image/svg+xml;base64," + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="100" fill="#8FA3B1"/><text y="380" x="60" font-size="340">🪟</text></svg>'), sizes: '512x512', type: 'image/svg+xml' }
-  ]
-};
-const mBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-document.getElementById('manifest-link').href = URL.createObjectURL(mBlob);
-
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault(); deferredPrompt = e;
-  if (!localStorage.getItem('pwa_dismissed')) {
-    setTimeout(() => document.getElementById('pwa-banner').classList.add('show'), 4000);
+  const imgs = getHistImgs(id);
+  if (!imgs.length) { alert('此記錄沒有已儲存的圖片'); return; }
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (isIOS) {
+    const w = window.open();
+    let html = '';
+    imgs.forEach(function(r) {
+      html += '<div style="margin-bottom:20px;text-align:center"><p style="color:#aaa;font-size:12px;margin-bottom:6px">' + r.label + '</p><img src="' + r.url + '" style="max-width:100%;border-radius:8px"></div>';
+    });
+    w.document.write('<html><body style="margin:0;background:#111;padding:20px">' + html + '<p style="color:#fff;text-align:center;font-size:13px;margin-top:16px">長按各圖片 → 加入相片</p></body></html>');
+  } else {
+    imgs.forEach(function(r, i) {
+      setTimeout(function() { dlSingle(r.url, r.label); }, i * 1000);
+    });
   }
-});
-function installPWA() {
-  document.getElementById('pwa-banner').classList.remove('show');
-  if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => deferredPrompt = null); }
-}
-function dismissPWA() {
-  document.getElementById('pwa-banner').classList.remove('show');
-  localStorage.setItem('pwa_dismissed', '1');
 }
 
-// ================================================================
-//  INIT
-// ================================================================
-updateNav();
-// Handle return from ECPay (called on every page load)
-(function() {
-  const urlParams = new URLSearchParams(location.search);
-  const payStatus = urlParams.get('pay');
-  if (payStatus === 'ok') {
-    // Give DOM time to initialize before showing pay-ok page
-    setTimeout(() => {
-      processPending();
-      go('pay-ok');
-    }, 100);
-  } else if (payStatus === 'fail') {
-    setTimeout(() => go('pay-fail'), 100);
+
+// ── Lightbox ──────────────────────────────────
+function openLightbox(url, label, isIOSSave) {
+  const overlay = document.getElementById('lb-overlay');
+  document.getElementById('lb-img').src = url;
+  document.getElementById('lb-label').textContent = label || '';
+  document.getElementById('lb-hint').textContent = isIOSSave ? '長按圖片 → 加入相片' : '點擊空白處關閉';
+  const dlBtn = document.getElementById('lb-dl-btn');
+  dlBtn.onclick = function() {
+    if (isIOSSave) return; // iOS 長按即可
+    dlSingle(url, label);
+  };
+  dlBtn.style.display = isIOSSave ? 'none' : '';
+  overlay.classList.add('open');
+}
+function closeLightbox(e) {
+  if (e.target === document.getElementById('lb-overlay')) {
+    document.getElementById('lb-overlay').classList.remove('open');
   }
-})();
+}
 </script>
+
+<!-- LIGHTBOX -->
+<div class="lb-overlay" id="lb-overlay" onclick="closeLightbox(event)">
+  <button class="lb-close" onclick="document.getElementById('lb-overlay').classList.remove('open')">×</button>
+  <img class="lb-img" id="lb-img" src="" alt="">
+  <div class="lb-label" id="lb-label"></div>
+  <div class="lb-hint" id="lb-hint">點擊空白處關閉</div>
+  <div class="lb-btns">
+    <button class="btn bp bsm" id="lb-dl-btn">⬇ 下載此張</button>
+  </div>
+</div>
 </body>
 </html>
