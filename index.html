@@ -1251,7 +1251,12 @@ function showResult(results) {
     dlBtn.className = 'btn bs bsm';
     dlBtn.style.cssText = 'margin-top:6px;width:100%';
     dlBtn.textContent = '⬇ 下載 ' + r.label;
-    dlBtn.onclick = function() { dlSingle(rUrl, rLabel); };
+    // 動態讀取 currentResults 取得最新 URL（可能已被更新為 base64）
+    dlBtn.dataset.label = rLabel;
+    dlBtn.onclick = function() {
+      const latest = currentResults.find(function(x) { return x.label === rLabel; });
+      dlSingle(latest ? latest.url : rUrl, rLabel);
+    };
     card.appendChild(dlBtn);
 
     container.appendChild(card);
@@ -1308,43 +1313,76 @@ function fallbackSVG() {
 // Download / Share
 function dlSingle(url, label) {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const safeName = 'CurtainAI_' + (label || '').replace(/[^a-zA-Z0-9一-龥]/g, '_') + '_' + Date.now() + '.png';
+  const safeName = 'CurtainAI_' + (label || '').replace(/[^\w一-龥]/g, '_') + '_' + Date.now() + '.png';
 
+  // iOS：開新視窗讓用戶長按儲存
   if (isIOS) {
-    const w = window.open();
-    w.document.write('<html><body style="margin:0;background:#111;padding:20px;text-align:center">' +
-      '<img src="' + url + '" style="max-width:100%;border-radius:8px"><br>' +
-      '<p style="color:#fff;font-size:13px;margin-top:12px">長按圖片 → 加入相片（' + (label||'') + '）</p></body></html>');
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write('<html><head><title>' + (label||'圖片') + '</title></head><body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px">' +
+        '<img src="' + url + '" style="max-width:100%;border-radius:8px;display:block">' +
+        '<p style="color:#fff;font-size:14px;margin-top:16px;text-align:center">長按圖片 → 儲存圖片（' + (label||'') + '）</p></body></html>');
+      w.document.close();
+    }
     return;
   }
 
-  // base64 data URL → 直接下載
+  // base64 → 直接用 <a> 下載（最可靠）
   if (url.startsWith('data:')) {
     const a = document.createElement('a');
     a.href = url;
     a.download = safeName;
+    a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    setTimeout(() => document.body.removeChild(a), 100);
     return;
   }
 
-  // 外部 URL → fetch 轉 blob 下載
-  fetch(url)
-    .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.blob(); })
+  // 外部 URL → 用 fetch+blob 下載，避免 CORS 問題時改用代理
+  fetch(url, { mode: 'cors' })
+    .then(r => {
+      if (!r.ok) throw new Error('fetch ' + r.status);
+      return r.blob();
+    })
     .then(blob => {
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
       a.download = safeName;
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      }, 500);
     })
     .catch(() => {
-      // 備援：直接開新分頁
-      window.open(url, '_blank');
+      // CORS 失敗：用代理 API 轉換
+      fetch('/api/proxy-image?url=' + encodeURIComponent(url))
+        .then(r => r.ok ? r.blob() : Promise.reject())
+        .then(blob => {
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = safeName;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 500);
+        })
+        .catch(() => {
+          // 最終備援：用 target=_blank 在新分頁開啟（用戶可右鍵另存）
+          const a = document.createElement('a');
+          a.href = url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => document.body.removeChild(a), 100);
+        });
     });
 }
 
@@ -1365,9 +1403,11 @@ function dlAllResult() {
     w.document.write('<html><body style="margin:0;background:#111;padding:20px">' + imgs +
       '<p style="color:#fff;text-align:center;font-size:13px;margin-top:16px">長按各圖片 → 加入相片</p></body></html>');
   } else {
-    // 逐張下載，每張間隔 1 秒
-    currentResults.forEach((r, i) => {
-      setTimeout(() => dlSingle(r.url, r.label), i * 1000);
+    // 逐張下載，間隔 1.5 秒避免瀏覽器攔截
+    let delay = 0;
+    currentResults.forEach((r) => {
+      setTimeout(() => dlSingle(r.url, r.label), delay);
+      delay += 1500;
     });
   }
 }
@@ -1378,56 +1418,47 @@ function dlResult() { dlAllResult(); }
 // ================================================================
 function histCard(g) {
   const sm = { success: '成功（4張）', failed: '失敗', pending: '處理中' };
-  const card = document.createElement('div');
-  card.className = 'hc';
+  const typeName = ctName(g.type) || g.type || '未知';
+  const gid = g.id;
+  const hasThumb = !!g.imgOut;
 
-  // Thumbnail
-  if (g.imgOut) {
-    const img = document.createElement('img');
-    img.src = g.imgOut;
-    img.alt = 'thumb';
-    img.style.cssText = 'width:100%;height:168px;object-fit:cover;display:block;cursor:zoom-in';
-    img.onclick = function() { openLightbox(g.imgOut, ctName(g.type) || g.type || ''); };
-    img.onerror = function() { this.parentElement.innerHTML = '<div class="hc-ph">🪟</div>'; };
-    card.appendChild(img);
+  let html = '<div class="hc">';
+
+  // Thumbnail - use data-gid to avoid inline quote issues
+  if (hasThumb) {
+    html += '<img src="' + g.imgOut + '"';
+    html += ' style="width:100%;height:168px;object-fit:cover;display:block;cursor:zoom-in"';
+    html += ' onclick="histThumbClick(this)"';
+    html += '>';
   } else {
-    card.innerHTML = '<div class="hc-ph">🪟</div>';
+    html += '<div class="hc-ph">🪟</div>';
   }
 
   // Info
-  const info = document.createElement('div');
-  info.className = 'hc-info';
-  info.innerHTML =
-    '<h4>' + (ctName(g.type) || g.type || '未知') + ' · ' + (g.color || '') + '</h4>' +
-    '<p>' + (g.mat ? g.mat + ' · ' : '') + '☀️🌇🌙🔍 四種效果</p>' +
-    '<span class="sbadge ' + g.status + '">' + (sm[g.status] || g.status) + '</span>';
-  card.appendChild(info);
+  html += '<div class="hc-info">';
+  html += '<h4>' + typeName + ' · ' + (g.color || '') + '</h4>';
+  html += '<p>' + (g.mat ? g.mat + ' · ' : '') + '☀️🌇🌙🔍 四種效果</p>';
+  html += '<span class="sbadge ' + g.status + '">' + (sm[g.status] || g.status) + '</span>';
+  html += '</div>';
 
-  // Buttons (only if success)
+  // Actions
   if (g.status === 'success') {
-    const acts = document.createElement('div');
-    acts.className = 'hca';
-    acts.style.cssText = 'flex-wrap:wrap;gap:6px';
-
-    const viewBtn = document.createElement('button');
-    viewBtn.className = 'btn bs bsm';
-    viewBtn.style.flex = '1';
-    viewBtn.textContent = '👁 查看';
-    viewBtn.onclick = function() { viewHistory(g.id); };
-    acts.appendChild(viewBtn);
-
-    const dlBtn = document.createElement('button');
-    dlBtn.className = 'btn bp bsm';
-    dlBtn.style.flex = '1';
-    dlBtn.textContent = '⬇ 下載';
-    dlBtn.onclick = function() { dlAllFromHistory(g.id); };
-    acts.appendChild(dlBtn);
-
-    card.appendChild(acts);
+    html += '<div class="hca" style="flex-wrap:wrap;gap:6px">';
+    html += '<button class="btn bs bsm" style="flex:1" data-gid="' + gid + '" onclick="viewHistory(this.dataset.gid)">👁 查看</button>';
+    html += '<button class="btn bp bsm" style="flex:1" data-gid="' + gid + '" onclick="dlAllFromHistory(this.dataset.gid)">⬇ 下載</button>';
+    html += '</div>';
   }
 
-  return card.outerHTML;
+  html += '</div>';
+  return html;
 }
+
+// Helper for thumbnail click - avoids inline quote escaping
+function histThumbClick(img) {
+  openLightbox(img.src, img.alt || '效果圖');
+}
+
+
 
 function rdHist() {
   const u = LS.curUser(); if (!u) return;
@@ -1526,7 +1557,12 @@ function viewHistory(id) {
       dlBtn.className = 'btn bs bsm';
       dlBtn.style.width = '100%';
       dlBtn.textContent = '⬇ 下載此張';
-      dlBtn.onclick = function() { dlSingle(rUrl, rLabel); };
+      // 動態讀取 currentResults 取得最新 URL（可能已被更新為 base64）
+    dlBtn.dataset.label = rLabel;
+    dlBtn.onclick = function() {
+      const latest = currentResults.find(function(x) { return x.label === rLabel; });
+      dlSingle(latest ? latest.url : rUrl, rLabel);
+    };
       card.appendChild(dlBtn);
 
       grid.appendChild(card);
