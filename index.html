@@ -989,8 +989,13 @@ async function doGenerate() {
     if (tasks.length === 0) throw new Error('所有任務建立失敗');
 
     addLog(`🔄 開始輪詢 ${tasks.length} 個任務狀態...`);
-    const results = await Promise.all(tasks.map(t => kiePollTask(t.taskId, gid, t.label)));
-    const successResults = results.filter(Boolean);
+    // 用 allSettled 讓部分失敗也能顯示成功的圖片
+    const settled = await Promise.allSettled(tasks.map(t => kiePollTask(t.taskId, gid, t.label)));
+    const successResults = settled
+      .filter(r => r.status === 'fulfilled' && r.value)
+      .map(r => r.value);
+    const failCount = settled.filter(r => r.status === 'rejected').length;
+    if (failCount > 0) addLog('⚠️ ' + failCount + ' 個任務失敗', 'le');
     if (successResults.length === 0) throw new Error('所有圖片生成失敗');
     showResult(successResults);
     addLog(`🎉 完成！成功生成 ${successResults.length}/4 張`, 'lk');
@@ -1096,7 +1101,6 @@ async function kiePollTask(taskId, gid, label = '') {
           clearTimers();
           const msg = dd.failMsg || '未知錯誤';
           addLog('❌ 失敗: ' + msg, 'le');
-          const u = LS.curUser(); u.points += 30; LS.saveUser(u); updateNav();
           LS.updateGen(gid, { status: 'failed' });
           reject(new Error('生成失敗: ' + msg));
         } else {
@@ -1181,26 +1185,63 @@ async function persistResults(gid, results) {
 
 function showResult(results) {
   clearTimers();
-  // results = [{ url, label }, ...]
-  currentResults = results; // 儲存全部結果供下載使用
+  currentResults = results;
   genImgUrl = results[0]?.url || null;
   document.getElementById('prog-sec').style.display = 'none';
   document.getElementById('res-sec').style.display  = '';
 
   const container = document.getElementById('res-imgs-container');
-  container.innerHTML = results.map((r, i) => {
-    const isSwatch = r.label.includes('材質特寫');
-    return `<div style="text-align:center">
-      <div style="font-size:13px;font-weight:700;color:var(--tx2);margin-bottom:8px;letter-spacing:.5px">${r.label}</div>
-      ${isSwatch ? `<div style="font-size:11px;color:var(--ac2);margin-bottom:8px;background:var(--ac-l);border-radius:8px;padding:5px 10px">📋 可截圖此圖拿給窗簾店，說明您選擇的類型與材質</div>` : ''}
-      <img src="${r.url}" alt="${r.label}"
-        style="width:100%;border-radius:${isSwatch ? '12px' : '16px'};box-shadow:var(--shl);display:block;margin-bottom:4px${isSwatch ? ';border:2px solid var(--ac)' : ''};cursor:zoom-in"
-        onclick="openLightbox('${r.url}','${r.label}')"
-        onerror="this.src='${fallbackSVG()}'">
-      ${isSwatch ? `<div style="font-size:11px;color:var(--tx2);margin-bottom:6px">類型：${ctName(document.getElementById('c-type')?.value)} ／ 材質：${document.getElementById('c-mat')?.value || '－'} ／ 顏色：${selColor?.n || '－'}</div>` : ''}
-      <button class="btn bs bsm" style="margin-top:6px;width:100%" onclick="dlSingle('${r.url}','${r.label}')">⬇ 下載 ${r.label}</button>
-    </div>`;
-  }).join('');
+  container.innerHTML = '';
+
+  results.forEach(function(r) {
+    const isSwatch = r.label && r.label.includes('特寫');
+
+    const card = document.createElement('div');
+    card.style.textAlign = 'center';
+
+    // Label
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx2);margin-bottom:8px;letter-spacing:.5px';
+    lbl.textContent = r.label;
+    card.appendChild(lbl);
+
+    // Swatch hint
+    if (isSwatch) {
+      const hint = document.createElement('div');
+      hint.style.cssText = 'font-size:11px;color:var(--ac2);margin-bottom:8px;background:var(--ac-l);border-radius:8px;padding:5px 10px';
+      hint.textContent = '📋 可截圖此圖拿給窗簾店，說明您選擇的類型與材質';
+      card.appendChild(hint);
+    }
+
+    // Image
+    const img = document.createElement('img');
+    img.src = r.url;
+    img.style.cssText = 'width:100%;border-radius:' + (isSwatch ? '12px' : '16px') + ';box-shadow:var(--shl);display:block;margin-bottom:4px;cursor:zoom-in' + (isSwatch ? ';border:2px solid var(--ac)' : '');
+    img.onerror = function() { this.src = fallbackSVG(); };
+    const rUrl = r.url, rLabel = r.label;
+    img.onclick = function() { openLightbox(rUrl, rLabel); };
+    card.appendChild(img);
+
+    // Swatch info
+    if (isSwatch) {
+      const info = document.createElement('div');
+      info.style.cssText = 'font-size:11px;color:var(--tx2);margin-bottom:6px';
+      const typeEl = document.getElementById('c-type');
+      const matEl = document.getElementById('c-mat');
+      info.textContent = '類型：' + (ctName(typeEl ? typeEl.value : '') || '－') + ' ／ 材質：' + (matEl ? matEl.value || '－' : '－') + ' ／ 顏色：' + (selColor ? selColor.n : '－');
+      card.appendChild(info);
+    }
+
+    // Download button
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'btn bs bsm';
+    dlBtn.style.cssText = 'margin-top:6px;width:100%';
+    dlBtn.textContent = '⬇ 下載 ' + r.label;
+    dlBtn.onclick = function() { dlSingle(rUrl, rLabel); };
+    card.appendChild(dlBtn);
+
+    container.appendChild(card);
+  });
 }
 
 // Progress helpers
