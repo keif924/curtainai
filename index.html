@@ -741,6 +741,7 @@ let genImgUrl = null;
 let pollTimer = null;
 let progTimer = null;
 let deferredPrompt = null;
+let currentResults = []; // 儲存最新一次生成的所有圖片
 
 // ================================================================
 //  STORAGE
@@ -1122,22 +1123,37 @@ async function fetchImageAsBase64(url) {
 // 永久儲存生成結果（把 URL 轉為 base64 存入 localStorage）
 async function persistResults(gid, results) {
   try {
-    addLog('💾 正在永久儲存圖片...');
-    const savedResults = await Promise.all(
-      results.map(async r => {
+    addLog('💾 正在永久儲存圖片（' + results.length + ' 張）...');
+    
+    // 逐張轉 base64 並儲存到獨立 localStorage key（避免超出大小限制）
+    const savedResults = [];
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      try {
         const b64 = await fetchImageAsBase64(r.url);
-        return { ...r, url: b64 };
-      })
-    );
-    // 更新 localStorage 中的生成記錄
+        // 用獨立 key 儲存每張圖片
+        localStorage.setItem('cai_img_' + gid + '_' + i, JSON.stringify({ label: r.label, url: b64 }));
+        savedResults.push({ label: r.label, url: b64, idx: i });
+        addLog('💾 已儲存 ' + r.label, 'lk');
+      } catch(e) {
+        // 儲存失敗（可能空間不足），保留原 URL
+        savedResults.push({ label: r.label, url: r.url, idx: i });
+        addLog('⚠️ ' + r.label + ' 儲存失敗，保留原 URL', 'le');
+      }
+    }
+    
+    // 更新主記錄（只存索引，不存 base64）
     const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
     const idx = all.findIndex(g => g.id === gid);
     if (idx >= 0) {
       all[idx].imgOut = savedResults[0]?.url || null;
-      all[idx].allImgs = savedResults.map(r => ({ label: r.label, url: r.url }));
+      all[idx].imgCount = savedResults.length;
+      // allImgs 改為輕量版（只存 label，URL 從獨立 key 讀取）
+      all[idx].allImgs = savedResults.map((r, i) => ({ label: r.label, idx: i, url: r.url }));
       localStorage.setItem('cai_gens', JSON.stringify(all));
     }
-    addLog('✅ 圖片已永久儲存，歷史記錄可隨時下載', 'lk');
+    
+    addLog('✅ 全部 ' + savedResults.length + ' 張已永久儲存，歷史記錄可隨時下載', 'lk');
     return savedResults;
   } catch (e) {
     console.warn('永久儲存失敗:', e.message);
@@ -1148,6 +1164,7 @@ async function persistResults(gid, results) {
 function showResult(results) {
   clearTimers();
   // results = [{ url, label }, ...]
+  currentResults = results; // 儲存全部結果供下載使用
   genImgUrl = results[0]?.url || null;
   document.getElementById('prog-sec').style.display = 'none';
   document.getElementById('res-sec').style.display  = '';
@@ -1218,25 +1235,58 @@ function fallbackSVG() {
 function dlSingle(url, label) {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   if (isIOS) {
+    // iOS：開新頁讓用戶長按儲存
     const w = window.open();
-    w.document.write(`<html><body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;padding:20px"><img src="${url}" style="max-width:100%;border-radius:8px"><p style="color:#fff;font-family:sans-serif;margin-top:14px;font-size:13px">長按圖片 → 加入相片（${label}）</p></body></html>`);
+    w.document.write('<html><body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;padding:20px">' +
+      '<img src="' + url + '" style="max-width:100%;border-radius:8px">' +
+      '<p style="color:#fff;font-family:sans-serif;margin-top:14px;font-size:13px">長按圖片 → 加入相片（' + label + '）</p>' +
+      '</body></html>');
   } else {
-    const a = document.createElement('a'); a.href = url; a.download = 'CurtainAI_' + label + '_' + Date.now() + '.png'; a.click();
+    // 直接觸發下載到電腦
+    fetch(url)
+      .then(r => r.blob())
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = 'CurtainAI_' + (label || '').replace(/[^\w一-龥]/g, '_') + '_' + Date.now() + '.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      })
+      .catch(() => {
+        // fetch 失敗時備援：直接用 a 標籤
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'CurtainAI_' + Date.now() + '.png';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
   }
 }
 function dlAllResult() {
-  // Get all images from container
-  const imgs = document.querySelectorAll('#res-imgs-container img');
+  // 從 currentResults 全域變數取得所有圖片（確保是 4 張）
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (!currentResults || currentResults.length === 0) {
+    alert('沒有可下載的圖片');
+    return;
+  }
   if (isIOS) {
     const w = window.open();
-    const imgsHtml = Array.from(imgs).map(img => `<img src="${img.src}" style="max-width:100%;border-radius:8px;margin-bottom:16px">`).join('');
-    w.document.write(`<html><body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;padding:20px">${imgsHtml}<p style="color:#fff;font-family:sans-serif;margin-top:14px;font-size:13px">長按各圖片 → 加入相片</p></body></html>`);
+    const imgsHtml = currentResults.map(r =>
+      '<div style="margin-bottom:20px;text-align:center">' +
+      '<p style="color:#aaa;font-size:12px;margin-bottom:6px">' + r.label + '</p>' +
+      '<img src="' + r.url + '" style="max-width:100%;border-radius:8px">' +
+      '</div>'
+    ).join('');
+    w.document.write('<html><body style="margin:0;background:#111;padding:20px">' + imgsHtml +
+      '<p style="color:#fff;text-align:center;font-size:13px;margin-top:16px">長按各圖片 → 加入相片</p></body></html>');
   } else {
-    imgs.forEach((img, i) => {
-      setTimeout(() => {
-        const a = document.createElement('a'); a.href = img.src; a.download = 'CurtainAI_' + (i+1) + '_' + Date.now() + '.png'; a.click();
-      }, i * 600);
+    currentResults.forEach((r, i) => {
+      setTimeout(() => { dlSingle(r.url, r.label); }, i * 800);
     });
   }
 }
@@ -1419,9 +1469,24 @@ function viewHistory(id) {
     const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
     const g = all.find(x => x.id === id);
     if (!g) return;
-    const imgs = g.allImgs || (g.imgOut ? [{ label: '效果圖', url: g.imgOut }] : []);
+    // 嘗試從獨立 key 讀取每張圖片（新版儲存格式）
+    let imgs = [];
+    if (g.allImgs && g.allImgs.length > 0) {
+      imgs = g.allImgs.map((item, i) => {
+        try {
+          const stored = localStorage.getItem('cai_img_' + id + '_' + i);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            return { label: parsed.label, url: parsed.url };
+          }
+        } catch(e) {}
+        return { label: item.label, url: item.url }; // 備援：用原本儲存的 URL
+      });
+    } else if (g.imgOut) {
+      imgs = [{ label: '效果圖', url: g.imgOut }];
+    }
     if (!imgs.length) {
-      alert('此記錄沒有已儲存的圖片\n\n提示：只有最新版本生成的記錄才支援歷史下載功能');
+      alert('此記錄沒有已儲存的圖片\n提示：只有最新版本生成的記錄才支援歷史下載功能');
       return;
     }
     const existing = document.getElementById('hist-modal');
