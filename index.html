@@ -957,10 +957,11 @@ async function doGenerate() {
   if (!selColor)                                  return alert('請選擇窗簾顏色');
   if (u.points < 30)  { document.getElementById('m-pts').classList.add('open'); return; }
 
-  // Deduct points
+  // 扣點
   u.points -= 30; LS.saveUser(u); updateNav();
   document.getElementById('cur-pts').textContent = u.points;
-  pointsRefunded = false; // 重置退點標記
+  pointsRefunded = false;
+  uploadedImageUrl = null;
 
   const gid  = uid();
   currentGid = gid;
@@ -972,71 +973,74 @@ async function doGenerate() {
 
   document.getElementById('create-form').style.display = 'none';
   document.getElementById('prog-sec').style.display    = '';
+  document.getElementById('res-sec').style.display     = 'none';
   document.getElementById('slog').innerHTML = '';
   startProgress();
-  addLog('📤 逐一送出 4 個任務至 KIE AI...');
 
-  const lightingScenes = [
-    { label: '☀️ 白天', suffix: 'Daytime, bright natural sunlight.' },
-    { label: '🌇 下午', suffix: 'Afternoon, warm golden light.' },
-    { label: '🌙 晚上', suffix: 'Evening, indoor lighting on, cozy ambiance.' },
-    { label: '🔍 材質特寫', isSwatch: true, suffix: '' }
+  const scenes = [
+    { label: '☀️ 白天',   suffix: 'Daytime, bright natural sunlight.' },
+    { label: '🌇 下午',   suffix: 'Afternoon, warm golden light.' },
+    { label: '🌙 晚上',   suffix: 'Evening, indoor lighting on, cozy ambiance.' },
+    { label: '🔍 材質特寫', isSwatch: true }
   ];
 
   try {
-    // 逐一建立任務（避免並行觸發 KIE AI internal error）
+    // 逐一建立任務，每個間隔 1.2 秒
+    addLog('📤 逐一建立生成任務...');
     const tasks = [];
-    for (let si = 0; si < lightingScenes.length; si++) {
-      const scene = lightingScenes[si];
-      addLog('⏳ 建立 ' + scene.label + ' 任務...');
+    for (let i = 0; i < scenes.length; i++) {
+      const scene = scenes[i];
+      addLog('⏳ 建立 ' + scene.label + '...');
       try {
         const taskId = scene.isSwatch
           ? await kieCreateSwatch(type, mat)
           : await kieCreateTask(type, mat, note, scene.suffix);
-        addLog('✅ ' + scene.label + ' 建立成功：' + taskId.slice(0,12) + '...', 'lk');
+        addLog('✅ ' + scene.label + ' 建立成功', 'lk');
         tasks.push({ taskId, label: scene.label });
-        // 每個任務間隔 1 秒，避免觸發 rate limit
-        if (si < lightingScenes.length - 1) {
-          await new Promise(r => setTimeout(r, 1000));
-        }
-      } catch(err) {
-        addLog('⚠️ ' + scene.label + ' 建立失敗：' + err.message.slice(0,50), 'le');
+      } catch(e) {
+        addLog('⚠️ ' + scene.label + ' 建立失敗：' + e.message.slice(0, 50), 'le');
+      }
+      if (i < scenes.length - 1) {
+        await new Promise(r => setTimeout(r, 1200));
       }
     }
 
     if (tasks.length === 0) throw new Error('所有任務建立失敗');
-    addLog('🔄 開始輪詢 ' + tasks.length + ' 個任務狀態...');
+    addLog('🔄 開始輪詢 ' + tasks.length + ' 個任務...');
 
-    const settled = await Promise.allSettled(tasks.map(t => kiePollTask(t.taskId, gid, t.label)));
-    const successResults = settled
-      .filter(r => r.status === 'fulfilled' && r.value)
-      .map(r => r.value);
-    const failCount = settled.filter(r => r.status === 'rejected').length;
-    if (failCount > 0) addLog('⚠️ ' + failCount + ' 個任務失敗', 'le');
-    if (successResults.length === 0) throw new Error('所有圖片生成失敗');
-    showResult(successResults);
-    addLog(`🎉 完成！成功生成 ${successResults.length}/4 張`, 'lk');
-    // 立即把 status 設為 success
-    // 設定成功狀態（allImgs 會在 persistResults 後更新）
-    LS.updateGen(gid, { status: 'success', imgOut: successResults[0]?.url || null, imgCount: successResults.length });
-    // 背景儲存圖片至 localStorage（不阻塞 UI）
-    persistResults(gid, successResults).then(saved => {
-      // 只有在仍是同一次生成時才更新顯示
-      if (currentGid === gid) {
-        showResult(saved); // 更新顯示中的圖片為 base64（現在是永久 base64）
+    // 逐一輪詢每個任務（避免共用 pollTimer 互相干擾）
+    const successResults = [];
+    for (let i = 0; i < tasks.length; i++) {
+      const t = tasks[i];
+      addLog('🔄 輪詢 ' + t.label + '...');
+      try {
+        const result = await pollSingleTask(t.taskId, t.label, gid);
+        if (result) successResults.push(result);
+      } catch(e) {
+        addLog('❌ ' + t.label + ' 失敗：' + e.message.slice(0, 40), 'le');
       }
+    }
+
+    clearTimers();
+
+    if (successResults.length === 0) throw new Error('所有圖片生成失敗');
+
+    addLog('🎉 完成！成功生成 ' + successResults.length + ' 張', 'lk');
+    LS.updateGen(gid, { status: 'success', imgOut: successResults[0].url });
+    showResult(successResults);
+
+    // 背景轉存 base64
+    persistResults(gid, successResults).then(saved => {
+      if (currentGid === gid) showResult(saved);
     });
 
   } catch (err) {
     clearTimers();
-    addLog('❌ 錯誤：' + err.message, 'le');
-    // 防止重複退點
+    addLog('❌ ' + err.message, 'le');
     if (!pointsRefunded) {
       pointsRefunded = true;
       const u2 = LS.curUser();
-      u2.points += 30;
-      LS.saveUser(u2);
-      updateNav();
+      u2.points += 30; LS.saveUser(u2); updateNav();
       LS.updateGen(gid, { status: 'failed' });
       document.getElementById('prog-txt').textContent = '生成失敗，點數已退回';
       document.getElementById('prog-sub').textContent = err.message.slice(0, 60);
@@ -1044,15 +1048,15 @@ async function doGenerate() {
         document.getElementById('prog-sec').style.display = 'none';
         document.getElementById('create-form').style.display = '';
         document.getElementById('cur-pts').textContent = u2.points;
-      }, 3500);
+      }, 3000);
     }
   }
 }
 
-async function kieCreateTask(type, mat, note, lightingSuffix = '') {
-  const prompt = buildPrompt(type, mat, note, lightingSuffix);
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  // 若已有上傳好的 URL，直接使用（避免重複上傳同一張圖片）
+async function kieCreateTask(type, mat, note, suffix) {
+  const prompt = buildPrompt(type, mat, note, suffix);
   const body = uploadedImageUrl
     ? { prompt, imageUrl: uploadedImageUrl }
     : { prompt, image_input: [imgB64] };
@@ -1062,154 +1066,124 @@ async function kieCreateTask(type, mat, note, lightingSuffix = '') {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
-  if (!res.ok) { const t = await res.text(); throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 80)); }
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   const d = await res.json();
-  if (d.code !== 200 || !d.data?.taskId) throw new Error('任務建立失敗: ' + (d.msg || 'unknown'));
-
-  // 快取後端回傳的上傳 URL，後續任務直接使用
+  if (!d.data?.taskId) throw new Error(d.msg || '任務建立失敗');
   if (d._uploadedUrl && !uploadedImageUrl) {
     uploadedImageUrl = d._uploadedUrl;
-    addLog('🔗 圖片已上傳，後續任務直接使用快取 URL', 'lk');
   }
-
   return d.data.taskId;
 }
 
-// 生成材質特寫圖（不使用空間照片，純文字 prompt）
 async function kieCreateSwatch(type, mat) {
   const typeName = ctName(type) || type;
-  const matName = mat || '聚酯纖維';
+  const matName  = mat || '聚酯纖維';
   const colorName = selColor ? selColor.n : '莫蘭迪色';
-  const colorHex = selColor ? selColor.h : '#C4A882';
-
-  // 特寫 prompt：專注在布料質感細節
-  const prompt = `Close-up product photo of ${typeName} fabric. ` +
-    `Color: ${colorName} (${colorHex}). Material: ${matName}. ` +
-    `Show fabric texture clearly. White background. Studio lighting.`;
+  const colorHex  = selColor ? selColor.h : '#C4A882';
+  const prompt = 'Close-up product photo of ' + typeName + ' fabric. ' +
+    'Color: ' + colorName + ' (' + colorHex + '). Material: ' + matName + '. ' +
+    'Show fabric texture clearly. White background. Studio lighting.';
 
   const res = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      prompt,
-      image_input: [], // 不需要空間照片
-    })
+    body: JSON.stringify({ prompt, image_input: [] })
   });
-  if (!res.ok) { const t = await res.text(); throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 80)); }
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   const d = await res.json();
-  if (d.code !== 200 || !d.data?.taskId) throw new Error('材質特寫任務建立失敗: ' + (d.msg || 'unknown'));
+  if (!d.data?.taskId) throw new Error(d.msg || '材質特寫任務建立失敗');
   return d.data.taskId;
 }
 
-async function kiePollTask(taskId, gid, label = '') {
-  let n = 0; const max = 80;
+// 逐一輪詢（每個任務自己的 timer，輪詢完才進下一個）
+function pollSingleTask(taskId, label, gid) {
   return new Promise((resolve, reject) => {
-    pollTimer = setInterval(async () => {
+    let n = 0;
+    const MAX = 80;
+    pollTimer = setInterval(async function() {
       n++;
-      if (n > max) {
-        clearTimers();
-        LS.updateGen(gid, { status: 'failed' });
-        reject(new Error('任務逾時（超過 4 分鐘）'));
+      if (n > MAX) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        reject(new Error(label + ' 逾時'));
         return;
       }
       try {
-        // 呼叫後端 Vercel Function（/api/status）
         const r = await fetch('/api/status?taskId=' + taskId);
-        const d = await r.json(); const dd = d.data; if (!dd) return;
-        const st = dd.state, pct = dd.progress || Math.min(n * 2, 92);
-        setProgress(pct, '狀態：' + st, `輪詢 ${n}/${max}`);
-        if (st === 'success') {
-          clearTimers();
-          let urls = []; try { urls = JSON.parse(dd.resultJson || '{}').resultUrls || []; } catch {}
-          if (!urls.length) { reject(new Error('生成成功但無圖片 URL')); return; }
-          addLog(`🎉 ${label} 生成成功！`, 'lk');
-          // 不在此處更新主記錄，由 doGenerate 統一更新所有結果
-          resolve({ url: urls[0], label });
-        } else if (st === 'fail') {
-          clearTimers();
-          const msg = dd.failMsg || '未知錯誤';
-          addLog('❌ 失敗: ' + msg, 'le');
-          LS.updateGen(gid, { status: 'failed' });
-          reject(new Error('生成失敗: ' + msg));
-        } else {
-          addLog(`⏳ ${st} (${pct}%)`);
+        const d = await r.json();
+        const dd = d.data;
+        if (!dd) return;
+        const pct = dd.progress || Math.min(n * 2, 92);
+        setProgress(pct, label + ' 生成中...', '輪詢 ' + n + '/' + MAX);
+        if (dd.state === 'success') {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          let urls = [];
+          try { urls = JSON.parse(dd.resultJson || '{}').resultUrls || []; } catch(e) {}
+          if (!urls.length) { reject(new Error(label + ' 無圖片URL')); return; }
+          addLog('🎉 ' + label + ' 生成成功！', 'lk');
+          resolve({ url: urls[0], label: label });
+        } else if (dd.state === 'fail') {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          addLog('❌ ' + label + ' 失敗：' + (dd.failMsg || ''), 'le');
+          reject(new Error(label + ' 生成失敗'));
         }
-      } catch (e) { addLog('⚠️ 輪詢錯誤: ' + e.message, 'le'); }
+      } catch(e) {
+        addLog('⚠️ 輪詢錯誤：' + e.message.slice(0, 40), 'le');
+      }
     }, 3000);
   });
 }
 
-function buildPrompt(type, mat, note, lightingSuffix = '') {
+function buildPrompt(type, mat, note, suffix) {
   const colorName = selColor ? selColor.n : 'neutral';
   const colorHex  = selColor ? selColor.h : '#C4A882';
-  // 簡潔 prompt，減少觸發 Gemini 安全過濾的機率
-  let p = `Interior design photo. Add ${type} to the windows. `;
-  p += `Window treatment color: ${colorName} (${colorHex}). `;
-  if (mat) p += `Material: ${mat}. `;
-  p += `Keep all existing furniture and room elements unchanged. `;
-  p += `${lightingSuffix} `;
-  p += `Realistic interior photography.`;
-  if (note) p += ` ${note}.`;
+  let p = 'Interior design photo. Add ' + type + ' to the windows. ';
+  p += 'Window treatment color: ' + colorName + ' (' + colorHex + '). ';
+  if (mat) p += 'Material: ' + mat + '. ';
+  p += 'Keep all existing furniture and room elements unchanged. ';
+  if (suffix) p += suffix + ' ';
+  p += 'Realistic interior photography.';
+  if (note) p += ' ' + note + '.';
   return p.trim();
 }
 
-// 把圖片 URL 下載並轉為 base64 永久儲存
-async function fetchImageAsBase64(url) {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('fetch failed');
-    const blob = await res.blob();
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  } catch (e) {
-    console.warn('圖片轉 base64 失敗:', e.message);
-    return url; // 失敗時保留原 URL
-  }
-}
-
-// 永久儲存生成結果（把 URL 轉為 base64 存入 localStorage）
 async function persistResults(gid, results) {
-  try {
-    addLog('💾 正在永久儲存圖片（' + results.length + ' 張）...');
-    
-    // 逐張轉 base64 並儲存到獨立 localStorage key（避免超出大小限制）
-    const savedResults = [];
-    for (let i = 0; i < results.length; i++) {
-      const r = results[i];
-      try {
-        const b64 = await fetchImageAsBase64(r.url);
-        // 用獨立 key 儲存每張圖片
-        localStorage.setItem('cai_img_' + gid + '_' + i, JSON.stringify({ label: r.label, url: b64 }));
-        savedResults.push({ label: r.label, url: b64, idx: i });
-        addLog('💾 已儲存 ' + r.label, 'lk');
-      } catch(e) {
-        // 儲存失敗（可能空間不足），保留原 URL
-        savedResults.push({ label: r.label, url: r.url, idx: i });
-        addLog('⚠️ ' + r.label + ' 儲存失敗，保留原 URL', 'le');
+  const saved = [];
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    let url = r.url;
+    try {
+      if (!url.startsWith('data:')) {
+        const res = await fetch(url);
+        if (res.ok) {
+          const blob = await res.blob();
+          url = await new Promise((ok, fail) => {
+            const reader = new FileReader();
+            reader.onloadend = () => ok(reader.result);
+            reader.onerror = fail;
+            reader.readAsDataURL(blob);
+          });
+        }
       }
-    }
-    
-    // 更新主記錄（只存索引，不存 base64）
+    } catch(e) {}
+    saved.push({ url, label: r.label });
+    try {
+      localStorage.setItem('cai_img_' + gid + '_' + i, JSON.stringify({ url, label: r.label }));
+    } catch(e) {}
+  }
+  // 更新 allImgs
+  try {
     const all = JSON.parse(localStorage.getItem('cai_gens') || '[]');
     const idx = all.findIndex(g => g.id === gid);
     if (idx >= 0) {
-      all[idx].imgOut = savedResults[0]?.url || null;
-      all[idx].imgCount = savedResults.length;
-      all[idx].status = 'success'; // 確保歷史記錄顯示成功
-      all[idx].allImgs = savedResults.map((r, i) => ({ label: r.label, idx: i, url: r.url }));
+      all[idx].allImgs = saved.map((r, i) => ({ label: r.label, url: r.url }));
+      all[idx].imgOut = saved[0]?.url || all[idx].imgOut;
       localStorage.setItem('cai_gens', JSON.stringify(all));
     }
-    
-    addLog('✅ 全部 ' + savedResults.length + ' 張已永久儲存，歷史記錄可隨時下載', 'lk');
-    return savedResults;
-  } catch (e) {
-    console.warn('永久儲存失敗:', e.message);
-    return results;
-  }
+  } catch(e) {}
+  return saved;
 }
 
 function showResult(results) {
@@ -1224,17 +1198,14 @@ function showResult(results) {
 
   results.forEach(function(r) {
     const isSwatch = r.label && r.label.includes('特寫');
-
     const card = document.createElement('div');
     card.style.textAlign = 'center';
 
-    // Label
     const lbl = document.createElement('div');
     lbl.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx2);margin-bottom:8px;letter-spacing:.5px';
     lbl.textContent = r.label;
     card.appendChild(lbl);
 
-    // Swatch hint
     if (isSwatch) {
       const hint = document.createElement('div');
       hint.style.cssText = 'font-size:11px;color:var(--ac2);margin-bottom:8px;background:var(--ac-l);border-radius:8px;padding:5px 10px';
@@ -1242,34 +1213,21 @@ function showResult(results) {
       card.appendChild(hint);
     }
 
-    // Image
     const img = document.createElement('img');
     img.src = r.url;
     img.style.cssText = 'width:100%;border-radius:' + (isSwatch ? '12px' : '16px') + ';box-shadow:var(--shl);display:block;margin-bottom:4px;cursor:zoom-in' + (isSwatch ? ';border:2px solid var(--ac)' : '');
     img.onerror = function() { this.src = fallbackSVG(); };
-    const rUrl = r.url, rLabel = r.label;
+    var rUrl = r.url, rLabel = r.label;
     img.onclick = function() { openLightbox(rUrl, rLabel); };
     card.appendChild(img);
 
-    // Swatch info
-    if (isSwatch) {
-      const info = document.createElement('div');
-      info.style.cssText = 'font-size:11px;color:var(--tx2);margin-bottom:6px';
-      const typeEl = document.getElementById('c-type');
-      const matEl = document.getElementById('c-mat');
-      info.textContent = '類型：' + (ctName(typeEl ? typeEl.value : '') || '－') + ' ／ 材質：' + (matEl ? matEl.value || '－' : '－') + ' ／ 顏色：' + (selColor ? selColor.n : '－');
-      card.appendChild(info);
-    }
-
-    // Download button
     const dlBtn = document.createElement('button');
     dlBtn.className = 'btn bs bsm';
     dlBtn.style.cssText = 'margin-top:6px;width:100%';
     dlBtn.textContent = '⬇ 下載 ' + r.label;
-    // 動態讀取 currentResults 取得最新 URL（可能已被更新為 base64）
     dlBtn.dataset.label = rLabel;
     dlBtn.onclick = function() {
-      const latest = currentResults.find(function(x) { return x.label === rLabel; });
+      var latest = currentResults.find(function(x) { return x.label === rLabel; });
       dlSingle(latest ? latest.url : rUrl, rLabel);
     };
     card.appendChild(dlBtn);
@@ -1278,34 +1236,7 @@ function showResult(results) {
   });
 }
 
-// Progress helpers
-let progVal = 0;
-function startProgress() {
-  progVal = 0;
-  document.getElementById('prog-txt').textContent = '正在送出 3 個任務至 Nano Banana Edit...';
-  document.getElementById('prog-sub').textContent = '請稍候';
-  progTimer = setInterval(() => {
-    if (progVal < 88) { progVal += Math.random() * 1.8; setProgress(progVal); }
-  }, 900);
-}
-function setProgress(v, txt, sub) {
-  const c = 194.8, off = c - (Math.min(v, 100) / 100) * c;
-  document.getElementById('prog-circle').style.strokeDashoffset = off;
-  if (txt) document.getElementById('prog-txt').textContent = txt;
-  if (sub) document.getElementById('prog-sub').textContent = sub;
-}
-function addLog(msg, cls) {
-  const el = document.getElementById('slog');
-  const s = document.createElement('span');
-  s.className = 'll' + (cls ? ' ' + cls : '');
-  s.textContent = new Date().toLocaleTimeString('zh-TW') + ' ' + msg;
-  el.appendChild(s);
-  el.scrollTop = el.scrollHeight;
-}
-function clearTimers() {
-  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-  if (progTimer) { clearInterval(progTimer); progTimer = null; }
-}
+
 function fallbackSVG() {
   const c = selColor ? selColor.h : '#8FA3B1';
   const t = document.getElementById('c-type').value || '窗簾';
