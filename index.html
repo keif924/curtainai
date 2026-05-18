@@ -989,8 +989,8 @@ async function doGenerate() {
         ? kieCreateSwatch(type, mat)
         : kieCreateTask(type, mat, note, scene.suffix);
       return taskPromise
-        .then(taskId => { addLog(`✅ ${scene.label} 任務建立：${taskId.slice(0,12)}...`, 'lk'); return { taskId, label: scene.label }; })
-        .catch(err => { addLog(`⚠️ ${scene.label} 建立失敗：${err.message}`, 'le'); return null; });
+        .then(taskId => { addLog('✅ ' + scene.label + ' 任務建立：' + taskId.slice(0,12) + '...', 'lk'); return { taskId, label: scene.label }; })
+        .catch(err => { addLog('⚠️ ' + scene.label + ' 建立失敗（後端已自動重試）：' + err.message.slice(0,40), 'le'); return null; });
     });
     const tasks = (await Promise.all(taskPromises)).filter(Boolean);
     if (tasks.length === 0) throw new Error('所有任務建立失敗');
