@@ -1217,19 +1217,23 @@ function showResult(results) {
     img.src = r.url;
     img.style.cssText = 'width:100%;border-radius:' + (isSwatch ? '12px' : '16px') + ';box-shadow:var(--shl);display:block;margin-bottom:4px;cursor:zoom-in' + (isSwatch ? ';border:2px solid var(--ac)' : '');
     img.onerror = function() { this.src = fallbackSVG(); };
-    var rUrl = r.url, rLabel = r.label;
-    img.onclick = function() { openLightbox(rUrl, rLabel); };
-    card.appendChild(img);
+    // 用 index 儲存，完全避開 var 閉包問題
+    (function(idx) {
+      img.onclick = function() {
+        var item = currentResults[idx] || results[idx];
+        openLightbox(item.url, item.label);
+      };
+      card.appendChild(img);
 
-    const dlBtn = document.createElement('button');
-    dlBtn.className = 'btn bs bsm';
-    dlBtn.style.cssText = 'margin-top:6px;width:100%';
-    dlBtn.textContent = '⬇ 下載 ' + r.label;
-    dlBtn.dataset.label = rLabel;
-    dlBtn.onclick = function() {
-      var latest = currentResults.find(function(x) { return x.label === rLabel; });
-      dlSingle(latest ? latest.url : rUrl, rLabel);
-    };
+      const dlBtn = document.createElement('button');
+      dlBtn.className = 'btn bs bsm';
+      dlBtn.style.cssText = 'margin-top:6px;width:100%';
+      dlBtn.textContent = '⬇ 下載 ' + r.label;
+      dlBtn.onclick = function() {
+        var item = currentResults[idx] || results[idx];
+        dlSingle(item.url, item.label);
+      };
+    }(results.indexOf(r)));
     card.appendChild(dlBtn);
 
     container.appendChild(card);
