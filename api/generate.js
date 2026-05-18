@@ -1,6 +1,8 @@
 // Vercel Serverless Function — KIE AI 代理
-// 模式 1（有圖片）: JSON base64 上傳 → nano-banana-edit
-// 模式 2（無圖片）: 純文字 → nano-banana-2（材質特寫）
+// 優化：圖片只上傳一次，URL 傳入後直接使用
+// 模式 1（有 imageUrl）: 直接用 URL 呼叫 nano-banana-edit
+// 模式 2（有 image_input base64）: 先上傳取得 URL，再生成
+// 模式 3（無圖片）: 純文字生成材質特寫
 
 const KIE_KEY = process.env.KIE_API_KEY || 'd075cdbb4e77102096373752ccf92827';
 const KIE_BASE = 'https://api.kie.ai';
@@ -15,18 +17,29 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { prompt, image_input } = req.body;
+    const { prompt, image_input, imageUrl: preUploadedUrl } = req.body;
     if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
-
-    const hasImage = image_input && image_input.length > 0 && image_input[0];
 
     let payload;
 
-    if (hasImage) {
-      // ── 模式 1：JSON base64 上傳取得 URL ──────────────────────
-      const dataUrl = image_input[0];
+    if (preUploadedUrl) {
+      // ── 模式 1：已有上傳好的 URL（最快，無需再上傳）──────────
+      console.log('Mode: using pre-uploaded URL');
+      payload = {
+        model: 'google/nano-banana-edit',
+        input: {
+          prompt,
+          image_urls: [preUploadedUrl],
+          output_format: 'png',
+          image_size: '1:1',
+        },
+      };
 
-      // 用 JSON body 方式上傳（避免 multipart 問題）
+    } else if (image_input && image_input.length > 0 && image_input[0]) {
+      // ── 模式 2：上傳 base64 取得 URL ──────────────────────────
+      const dataUrl = image_input[0];
+      console.log('Mode: uploading image first...');
+
       const uploadRes = await fetch(KIE_UPLOAD, {
         method: 'POST',
         headers: {
@@ -41,58 +54,25 @@ export default async function handler(req, res) {
       });
 
       const uploadText = await uploadRes.text();
-      console.log('Upload status:', uploadRes.status);
-      console.log('Upload response:', uploadText.slice(0, 300));
+      console.log('Upload status:', uploadRes.status, uploadText.slice(0, 200));
 
-      if (!uploadRes.ok) {
-        // 上傳失敗，嘗試直接用 base64 data URL 傳給 KIE
-        console.log('Upload failed, trying direct base64 in image_input...');
-        
-        // 嘗試方案 B：直接用 nano-banana-edit 的 image_input 傳 base64
-        const payloadB = {
-          model: 'nano-banana-2',
-          input: {
-            prompt,
-            image_input: [dataUrl],
-            aspect_ratio: 'auto',
-            resolution: '1K',
-            output_format: 'png',
-          },
-        };
-
-        const kieResB = await fetch(`${KIE_BASE}/api/v1/jobs/createTask`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${KIE_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payloadB),
-        });
-
-        const dataB = await kieResB.json();
-        console.log('Fallback KIE response:', JSON.stringify(dataB));
-
-        if (!kieResB.ok) return res.status(kieResB.status).json({ error: dataB });
-        return res.status(200).json(dataB);
+      let imageUrl = null;
+      if (uploadRes.ok) {
+        try {
+          const uploadData = JSON.parse(uploadText);
+          imageUrl = uploadData?.data?.downloadUrl
+            || uploadData?.data?.fileUrl
+            || uploadData?.downloadUrl
+            || uploadData?.fileUrl;
+        } catch(e) {}
       }
-
-      // 上傳成功，取得 URL
-      let uploadData;
-      try { uploadData = JSON.parse(uploadText); } catch(e) { uploadData = {}; }
-      
-      const imageUrl = uploadData?.data?.downloadUrl
-        || uploadData?.data?.fileUrl
-        || uploadData?.downloadUrl
-        || uploadData?.fileUrl;
-
-      console.log('Image URL:', imageUrl);
 
       if (!imageUrl) {
-        return res.status(500).json({ 
-          error: '上傳成功但無法取得 URL，回應：' + uploadText.slice(0, 150) 
-        });
+        return res.status(500).json({ error: '圖片上傳失敗：' + uploadText.slice(0, 100) });
       }
 
+      // 回傳 imageUrl 讓前端存起來，後續任務直接使用
+      console.log('Upload success, imageUrl:', imageUrl);
       payload = {
         model: 'google/nano-banana-edit',
         input: {
@@ -102,10 +82,17 @@ export default async function handler(req, res) {
           image_size: '1:1',
         },
       };
-      console.log('Mode: image-to-image via URL');
+
+      // 把 imageUrl 附在回應裡，讓前端快取
+      const result = await callKIE(payload);
+      if (result.code === 200 && result.data?.taskId) {
+        result._uploadedUrl = imageUrl; // 附帶上傳好的 URL
+      }
+      return res.status(200).json(result);
 
     } else {
-      // ── 模式 2：無圖片，純文字生成材質特寫 ────────────────────
+      // ── 模式 3：無圖片，材質特寫 ──────────────────────────────
+      console.log('Mode: text-to-image for swatch');
       payload = {
         model: 'nano-banana-2',
         input: {
@@ -116,46 +103,49 @@ export default async function handler(req, res) {
           output_format: 'png',
         },
       };
-      console.log('Mode: text-to-image for swatch');
     }
 
-    // 自動重試最多 3 次（Gemini 偶爾隨機拒絕）
-    let lastData = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      const kieRes = await fetch(`${KIE_BASE}/api/v1/jobs/createTask`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${KIE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      lastData = await kieRes.json();
-      console.log(`KIE attempt ${attempt}:`, JSON.stringify(lastData));
-
-      // 成功
-      if (kieRes.ok && lastData.code === 200 && lastData.data?.taskId) {
-        return res.status(200).json(lastData);
-      }
-
-      // Gemini 內容過濾錯誤 → 稍等後重試
-      const errMsg = lastData?.msg || '';
-      const isContentFilter = errMsg.includes('could not generate') || errMsg.includes('prompt');
-      if (isContentFilter && attempt < 3) {
-        console.log(`Gemini filter hit, retrying (${attempt}/3)...`);
-        await new Promise(r => setTimeout(r, 1500 * attempt));
-        continue;
-      }
-
-      // 其他錯誤 → 直接返回
-      return res.status(kieRes.ok ? 200 : (kieRes.status || 500)).json(lastData);
-    }
-
-    return res.status(500).json(lastData || { error: 'Max retries exceeded' });
+    const result = await callKIE(payload);
+    return res.status(200).json(result);
 
   } catch (err) {
     console.error('Handler error:', err.message);
     return res.status(500).json({ error: err.message });
   }
+}
+
+async function callKIE(payload) {
+  // 重試最多 3 次
+  let lastData = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const kieRes = await fetch(`${KIE_BASE}/api/v1/jobs/createTask`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${KIE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    lastData = await kieRes.json();
+    console.log(`KIE attempt ${attempt}:`, JSON.stringify(lastData).slice(0, 200));
+
+    if (kieRes.ok && lastData.code === 200 && lastData.data?.taskId) {
+      return lastData;
+    }
+
+    const errMsg = lastData?.msg || '';
+    const shouldRetry = errMsg.includes('could not generate')
+      || errMsg.includes('internal error')
+      || errMsg.includes('prompt');
+
+    if (shouldRetry && attempt < 3) {
+      console.log(`Retrying (${attempt}/3) after error: ${errMsg}`);
+      await new Promise(r => setTimeout(r, 2000 * attempt));
+      continue;
+    }
+
+    return lastData;
+  }
+  return lastData || { code: 500, msg: 'Max retries exceeded' };
 }
