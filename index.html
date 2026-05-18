@@ -972,7 +972,7 @@ async function doGenerate() {
   document.getElementById('prog-sec').style.display    = '';
   document.getElementById('slog').innerHTML = '';
   startProgress();
-  addLog('📤 正在送出 4 個任務（白天、下午、晚上 + 材質特寫）至 KIE AI...');
+  addLog('📤 逐一送出 4 個任務至 KIE AI...');
 
   const lightingScenes = [
     { label: '☀️ 白天', suffix: 'Daytime, bright natural sunlight.' },
@@ -982,21 +982,29 @@ async function doGenerate() {
   ];
 
   try {
-    addLog('⏳ 同時建立 3 個生成任務...');
-    const taskPromises = lightingScenes.map(scene => {
-      // 材質特寫：使用獨立 prompt，不需要空間照片作為背景
-      const taskPromise = scene.isSwatch
-        ? kieCreateSwatch(type, mat)
-        : kieCreateTask(type, mat, note, scene.suffix);
-      return taskPromise
-        .then(taskId => { addLog('✅ ' + scene.label + ' 任務建立：' + taskId.slice(0,12) + '...', 'lk'); return { taskId, label: scene.label }; })
-        .catch(err => { addLog('⚠️ ' + scene.label + ' 建立失敗（後端已自動重試）：' + err.message.slice(0,40), 'le'); return null; });
-    });
-    const tasks = (await Promise.all(taskPromises)).filter(Boolean);
-    if (tasks.length === 0) throw new Error('所有任務建立失敗');
+    // 逐一建立任務（避免並行觸發 KIE AI internal error）
+    const tasks = [];
+    for (let si = 0; si < lightingScenes.length; si++) {
+      const scene = lightingScenes[si];
+      addLog('⏳ 建立 ' + scene.label + ' 任務...');
+      try {
+        const taskId = scene.isSwatch
+          ? await kieCreateSwatch(type, mat)
+          : await kieCreateTask(type, mat, note, scene.suffix);
+        addLog('✅ ' + scene.label + ' 建立成功：' + taskId.slice(0,12) + '...', 'lk');
+        tasks.push({ taskId, label: scene.label });
+        // 每個任務間隔 1 秒，避免觸發 rate limit
+        if (si < lightingScenes.length - 1) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      } catch(err) {
+        addLog('⚠️ ' + scene.label + ' 建立失敗：' + err.message.slice(0,50), 'le');
+      }
+    }
 
-    addLog(`🔄 開始輪詢 ${tasks.length} 個任務狀態...`);
-    // 用 allSettled 讓部分失敗也能顯示成功的圖片
+    if (tasks.length === 0) throw new Error('所有任務建立失敗');
+    addLog('🔄 開始輪詢 ' + tasks.length + ' 個任務狀態...');
+
     const settled = await Promise.allSettled(tasks.map(t => kiePollTask(t.taskId, gid, t.label)));
     const successResults = settled
       .filter(r => r.status === 'fulfilled' && r.value)
