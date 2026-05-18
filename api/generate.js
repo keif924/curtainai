@@ -119,20 +119,40 @@ export default async function handler(req, res) {
       console.log('Mode: text-to-image for swatch');
     }
 
-    const kieRes = await fetch(`${KIE_BASE}/api/v1/jobs/createTask`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${KIE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    // 自動重試最多 3 次（Gemini 偶爾隨機拒絕）
+    let lastData = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const kieRes = await fetch(`${KIE_BASE}/api/v1/jobs/createTask`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${KIE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-    const data = await kieRes.json();
-    console.log('KIE final response:', JSON.stringify(data));
+      lastData = await kieRes.json();
+      console.log(`KIE attempt ${attempt}:`, JSON.stringify(lastData));
 
-    if (!kieRes.ok) return res.status(kieRes.status).json({ error: data });
-    return res.status(200).json(data);
+      // 成功
+      if (kieRes.ok && lastData.code === 200 && lastData.data?.taskId) {
+        return res.status(200).json(lastData);
+      }
+
+      // Gemini 內容過濾錯誤 → 稍等後重試
+      const errMsg = lastData?.msg || '';
+      const isContentFilter = errMsg.includes('could not generate') || errMsg.includes('prompt');
+      if (isContentFilter && attempt < 3) {
+        console.log(`Gemini filter hit, retrying (${attempt}/3)...`);
+        await new Promise(r => setTimeout(r, 1500 * attempt));
+        continue;
+      }
+
+      // 其他錯誤 → 直接返回
+      return res.status(kieRes.ok ? 200 : (kieRes.status || 500)).json(lastData);
+    }
+
+    return res.status(500).json(lastData || { error: 'Max retries exceeded' });
 
   } catch (err) {
     console.error('Handler error:', err.message);
