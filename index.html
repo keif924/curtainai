@@ -760,6 +760,7 @@ let deferredPrompt = null;
 let currentResults = []; // 儲存最新一次生成的所有圖片
 let currentGid = null;   // 目前生成的 ID
 let pointsRefunded = false; // 防止重複退點
+let uploadedImageUrl = null; // 快取上傳後的圖片 URL，避免重複上傳
 
 // ================================================================
 //  STORAGE
@@ -913,6 +914,7 @@ function rdCreate() {
   document.getElementById('prog-sec').style.display    = 'none';
   document.getElementById('res-sec').style.display     = 'none';
   document.getElementById('slog').innerHTML = '';
+  uploadedImageUrl = null; // 清除圖片 URL 快取
   clearTimers();
 }
 
@@ -1049,22 +1051,27 @@ async function doGenerate() {
 
 async function kieCreateTask(type, mat, note, lightingSuffix = '') {
   const prompt = buildPrompt(type, mat, note, lightingSuffix);
-  // 呼叫後端 Vercel Function（/api/generate），由後端持有 API Key
-  // imgB64 是完整 data URL，後端會正確處理格式
+
+  // 若已有上傳好的 URL，直接使用（避免重複上傳同一張圖片）
+  const body = uploadedImageUrl
+    ? { prompt, imageUrl: uploadedImageUrl }
+    : { prompt, image_input: [imgB64] };
+
   const res = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      prompt,
-      image_input: [imgB64], // 傳完整 data URL（含 data:image/...;base64, 前綴）
-      aspect_ratio: 'auto',
-      resolution: '1K',
-      output_format: 'png'
-    })
+    body: JSON.stringify(body)
   });
   if (!res.ok) { const t = await res.text(); throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 80)); }
   const d = await res.json();
   if (d.code !== 200 || !d.data?.taskId) throw new Error('任務建立失敗: ' + (d.msg || 'unknown'));
+
+  // 快取後端回傳的上傳 URL，後續任務直接使用
+  if (d._uploadedUrl && !uploadedImageUrl) {
+    uploadedImageUrl = d._uploadedUrl;
+    addLog('🔗 圖片已上傳，後續任務直接使用快取 URL', 'lk');
+  }
+
   return d.data.taskId;
 }
 
