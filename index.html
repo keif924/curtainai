@@ -553,7 +553,7 @@ textarea{resize:vertical;min-height:76px}
           <div class="res-acts">
             <button class="btn bp bsm" onclick="dlAllResult()">⬇ 全部下載</button>
             <button class="btn bs bsm" onclick="shareResult()">↗ 分享</button>
-            <button class="btn bs bsm" onclick="rdCreate(true)">重新設計</button>
+            <button class="btn bs bsm" onclick="rdCreate()">重新設計</button>
           </div>
         </div>
       </div>
@@ -891,10 +891,8 @@ function renderDashboard() {
 // ================================================================
 //  CREATE
 // ================================================================
-function rdCreate(forceReset) {
+function rdCreate() {
   const u = LS.curUser(); if (!u) { go('auth'); return; }
-  // 如果結果頁正在顯示，且不是強制重置，就保留結果不清空
-  if (!forceReset && document.getElementById('res-sec').style.display !== 'none') return;
   document.getElementById('cur-pts').textContent = u.points;
   // Color grid
   document.getElementById('color-grid').innerHTML = COLORS.map((c, i) =>
@@ -1219,23 +1217,19 @@ function showResult(results) {
     img.src = r.url;
     img.style.cssText = 'width:100%;border-radius:' + (isSwatch ? '12px' : '16px') + ';box-shadow:var(--shl);display:block;margin-bottom:4px;cursor:zoom-in' + (isSwatch ? ';border:2px solid var(--ac)' : '');
     img.onerror = function() { this.src = fallbackSVG(); };
-    // 用 index 儲存，完全避開 var 閉包問題
-    (function(idx) {
-      img.onclick = function() {
-        var item = currentResults[idx] || results[idx];
-        openLightbox(item.url, item.label);
-      };
-      card.appendChild(img);
+    var rUrl = r.url, rLabel = r.label;
+    img.onclick = function() { openLightbox(rUrl, rLabel); };
+    card.appendChild(img);
 
-      const dlBtn = document.createElement('button');
-      dlBtn.className = 'btn bs bsm';
-      dlBtn.style.cssText = 'margin-top:6px;width:100%';
-      dlBtn.textContent = '⬇ 下載 ' + r.label;
-      dlBtn.onclick = function() {
-        var item = currentResults[idx] || results[idx];
-        dlSingle(item.url, item.label);
-      };
-    }(results.indexOf(r)));
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'btn bs bsm';
+    dlBtn.style.cssText = 'margin-top:6px;width:100%';
+    dlBtn.textContent = '⬇ 下載 ' + r.label;
+    dlBtn.dataset.label = rLabel;
+    dlBtn.onclick = function() {
+      var latest = currentResults.find(function(x) { return x.label === rLabel; });
+      dlSingle(latest ? latest.url : rUrl, rLabel);
+    };
     card.appendChild(dlBtn);
 
     container.appendChild(card);
