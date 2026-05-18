@@ -1297,76 +1297,60 @@ function fallbackSVG() {
 
 // Download / Share
 function dlSingle(url, label) {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const safeName = 'CurtainAI_' + (label || '').replace(/[^\w一-龥]/g, '_') + '_' + Date.now() + '.png';
 
+  function triggerDownload(blobUrl) {
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = safeName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() { document.body.removeChild(a); }, 200);
+  }
+
   // iOS：開新視窗讓用戶長按儲存
-  if (isIOS) {
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
     const w = window.open('', '_blank');
     if (w) {
-      w.document.write('<html><head><title>' + (label||'圖片') + '</title></head><body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px">' +
+      w.document.write('<html><head><title>' + (label||'圖片') + '</title></head>' +
+        '<body style="margin:0;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px">' +
         '<img src="' + url + '" style="max-width:100%;border-radius:8px;display:block">' +
-        '<p style="color:#fff;font-size:14px;margin-top:16px;text-align:center">長按圖片 → 儲存圖片（' + (label||'') + '）</p></body></html>');
+        '<p style="color:#fff;font-size:14px;margin-top:16px;text-align:center">長按圖片 → 儲存圖片</p></body></html>');
       w.document.close();
     }
     return;
   }
 
-  // base64 → 直接用 <a> 下載（最可靠）
+  // base64 → 直接下載
   if (url.startsWith('data:')) {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = safeName;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => document.body.removeChild(a), 100);
+    triggerDownload(url);
     return;
   }
 
-  // 外部 URL → 用 fetch+blob 下載，避免 CORS 問題時改用代理
-  fetch(url, { mode: 'cors' })
-    .then(r => {
-      if (!r.ok) throw new Error('fetch ' + r.status);
+  // 外部 URL → 先用後端 proxy 轉成 blob 再下載（避免 CORS）
+  fetch('/api/proxy-image?url=' + encodeURIComponent(url))
+    .then(function(r) {
+      if (!r.ok) throw new Error('proxy ' + r.status);
       return r.blob();
     })
-    .then(blob => {
+    .then(function(blob) {
       const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = safeName;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(blobUrl);
-      }, 500);
+      triggerDownload(blobUrl);
+      setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 1000);
     })
-    .catch(() => {
-      // CORS 失敗：用代理 API 轉換
-      fetch('/api/proxy-image?url=' + encodeURIComponent(url))
-        .then(r => r.ok ? r.blob() : Promise.reject())
-        .then(blob => {
+    .catch(function() {
+      // proxy 失敗備援：直接 fetch（可能 CORS 失敗再 fallback）
+      fetch(url)
+        .then(function(r) { return r.blob(); })
+        .then(function(blob) {
           const blobUrl = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = safeName;
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 500);
+          triggerDownload(blobUrl);
+          setTimeout(function() { URL.revokeObjectURL(blobUrl); }, 1000);
         })
-        .catch(() => {
-          // 最終備援：用 target=_blank 在新分頁開啟（用戶可右鍵另存）
-          const a = document.createElement('a');
-          a.href = url;
-          a.target = '_blank';
-          a.rel = 'noopener';
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => document.body.removeChild(a), 100);
+        .catch(function() {
+          // 最終備援：新分頁開啟讓用戶手動儲存
+          window.open(url, '_blank', 'noopener');
         });
     });
 }
