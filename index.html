@@ -553,7 +553,7 @@ textarea{resize:vertical;min-height:76px}
           <div class="res-acts">
             <button class="btn bp bsm" onclick="dlAllResult()">⬇ 全部下載</button>
             <button class="btn bs bsm" onclick="shareResult()">↗ 分享</button>
-            <button class="btn bs bsm" onclick="rdCreate()">重新設計</button>
+            <button class="btn bs bsm" onclick="rdCreate(true)">重新設計</button>
           </div>
         </div>
       </div>
@@ -891,8 +891,10 @@ function renderDashboard() {
 // ================================================================
 //  CREATE
 // ================================================================
-function rdCreate() {
+function rdCreate(forceReset) {
   const u = LS.curUser(); if (!u) { go('auth'); return; }
+  // 如果結果頁正在顯示，且不是強制重置，就保留結果不清空
+  if (!forceReset && document.getElementById('res-sec').style.display !== 'none') return;
   document.getElementById('cur-pts').textContent = u.points;
   // Color grid
   document.getElementById('color-grid').innerHTML = COLORS.map((c, i) =>
