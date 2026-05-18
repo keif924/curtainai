@@ -1237,6 +1237,45 @@ function showResult(results) {
 }
 
 
+// ── Progress & Log helpers ──────────────────────────────────────
+let progVal = 0;
+
+function startProgress() {
+  progVal = 0;
+  const ptxt = document.getElementById('prog-txt');
+  const psub = document.getElementById('prog-sub');
+  if (ptxt) ptxt.textContent = '正在建立任務...';
+  if (psub) psub.textContent = '請稍候，預計 40－60 秒';
+  clearTimers();
+  progTimer = setInterval(function() {
+    if (progVal < 85) { progVal += Math.random() * 1.5; setProgress(progVal); }
+  }, 900);
+}
+
+function setProgress(v, txt, sub) {
+  const c = 194.8, off = c - (Math.min(v, 100) / 100) * c;
+  const circle = document.getElementById('prog-circle');
+  if (circle) circle.style.strokeDashoffset = off;
+  if (txt) { const el = document.getElementById('prog-txt'); if (el) el.textContent = txt; }
+  if (sub) { const el = document.getElementById('prog-sub'); if (el) el.textContent = sub; }
+}
+
+function addLog(msg, cls) {
+  const el = document.getElementById('slog');
+  if (!el) return;
+  const s = document.createElement('span');
+  s.className = 'll' + (cls ? ' ' + cls : '');
+  s.textContent = new Date().toLocaleTimeString('zh-TW') + ' ' + msg;
+  el.appendChild(s);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearTimers() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  if (progTimer) { clearInterval(progTimer); progTimer = null; }
+}
+
+
 function fallbackSVG() {
   const c = selColor ? selColor.h : '#8FA3B1';
   const t = document.getElementById('c-type').value || '窗簾';
